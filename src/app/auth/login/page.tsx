@@ -127,57 +127,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Access */}
-          <div className="pt-4 border-t border-emerald-900/40 space-y-2">
-            <div className="text-center">
-              <p className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Acceso Rápido Demo (1-Click)</p>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">Contraseña demo para todos: <span className="text-emerald-400 font-bold">pachanga123</span></p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin("admin@pachanga.com")}
-                className="py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-xs flex flex-col items-center justify-center text-center"
-              >
-                <span>Carlos (Admin)</span>
-                <span className="text-[9px] text-amber-400/70 font-mono">admin@pachanga.com</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin("pablo@pachanga.com")}
-                className="py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex flex-col items-center justify-center text-center"
-              >
-                <span>Pablo DT</span>
-                <span className="text-[9px] text-emerald-400/70 font-mono">pablo@pachanga.com</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin("pedri@pachanga.com")}
-                className="py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex flex-col items-center justify-center text-center"
-              >
-                <span>Pedri González</span>
-                <span className="text-[9px] text-emerald-400/70 font-mono">pedri@pachanga.com</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin("nico@pachanga.com")}
-                className="py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex flex-col items-center justify-center text-center"
-              >
-                <span>Nico Williams</span>
-                <span className="text-[9px] text-emerald-400/70 font-mono">nico@pachanga.com</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin("borja@pachanga.com")}
-                className="col-span-2 py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex flex-col items-center justify-center text-center"
-              >
-                <span>Borja Iglesias</span>
-                <span className="text-[9px] text-emerald-400/70 font-mono">borja@pachanga.com</span>
-              </button>
-            </div>
-          </div>
-
-          <p className="text-xs text-center text-slate-400 pt-2">
+          <p className="text-xs text-center text-slate-400 pt-2 border-t border-emerald-900/30">
             ¿No tienes cuenta aún?{" "}
             <Link href="/auth/register" className="text-emerald-400 font-bold hover:underline">
               Regístrate aquí

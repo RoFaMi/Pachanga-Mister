@@ -143,7 +143,7 @@ export function Navigation({ user, activeLeague, onLogout }: NavigationProps) {
       </aside>
 
       {/* Mobile Bottom Tab Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-emerald-900/50 z-50 px-2 py-1.5 flex items-center justify-around shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg glass-panel bg-[#0b1310]/95 backdrop-blur-md border-t border-emerald-900/50 z-50 px-3 py-1.5 flex items-center justify-around shadow-2xl">
         {navItems.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
