@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Camera, Save, CheckCircle, AlertCircle, ArrowLeft, Trophy, Shield } from "lucide-react";
+import { User, Camera, Save, CheckCircle, AlertCircle, ArrowLeft, Trophy, Shield, Upload } from "lucide-react";
 import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
@@ -23,7 +23,36 @@ export default function PerfilPage() {
   const [nickname, setNickname] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      setMessage({ text: "La imagen debe ser menor a 8MB", type: "error" });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setMessage(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string;
+      if (base64Url) {
+        setAvatarUrl(base64Url);
+        setMessage({ text: "Foto de tu dispositivo cargada. Pulsa 'Guardar Cambios' para aplicar.", type: "success" });
+      }
+      setUploadingAvatar(false);
+    };
+    reader.onerror = () => {
+      setMessage({ text: "Error al leer la imagen seleccionada", type: "error" });
+      setUploadingAvatar(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -191,30 +220,46 @@ export default function PerfilPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Seleccionar Avatar Rápido:</label>
-                  <div className="grid grid-cols-6 gap-2 mb-3">
-                    {PRESET_AVATARS.map((url, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setAvatarUrl(url)}
-                        className={`p-1 rounded-xl border transition-all ${
-                          avatarUrl === url ? "border-amber-400 bg-amber-400/20 scale-105" : "border-emerald-900/40 bg-slate-900 hover:border-emerald-500"
-                        }`}
-                      >
-                        <img src={url} alt={`Preset ${i}`} className="w-10 h-10 rounded-lg object-cover mx-auto" />
-                      </button>
-                    ))}
-                  </div>
+                  <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Foto de Perfil / Avatar</label>
+                  <div className="space-y-3">
+                    <label className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs cursor-pointer transition-colors shadow-sm">
+                      <Upload className="w-4 h-4 text-amber-400" />
+                      <span>{uploadingAvatar ? "CARGANDO FOTO DE TU DISPOSITIVO..." : "📁 SUBIR FOTO DESDE TU DISPOSITIVO (PC / MÓVIL)"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        disabled={uploadingAvatar}
+                        className="hidden"
+                      />
+                    </label>
 
-                  <label className="text-xs font-bold text-slate-300 block mb-1">O pega una URL de Imagen personalizada:</label>
-                  <input
-                    type="url"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-slate-900 border border-emerald-800/60 rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
-                  />
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-300 block mb-1.5">O elige un avatar rápido:</span>
+                      <div className="grid grid-cols-6 gap-2">
+                        {PRESET_AVATARS.map((url, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setAvatarUrl(url)}
+                            className={`p-1 rounded-xl border transition-all ${
+                              avatarUrl === url ? "border-amber-400 bg-amber-400/20 scale-105" : "border-emerald-900/40 bg-slate-900 hover:border-emerald-500"
+                            }`}
+                          >
+                            <img src={url} alt={`Preset ${i}`} className="w-10 h-10 rounded-lg object-cover mx-auto" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <input
+                      type="url"
+                      value={avatarUrl}
+                      onChange={(e) => setAvatarUrl(e.target.value)}
+                      placeholder="O pega una URL de imagen personalizada (https://...)"
+                      className="w-full bg-slate-900 border border-emerald-800/60 rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
                 </div>
 
                 <div className="pt-3 border-t border-emerald-900/40">
