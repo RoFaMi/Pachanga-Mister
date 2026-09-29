@@ -8,12 +8,12 @@ import { Header } from "@/components/Header";
 import { safeFetchJson } from "@/lib/api";
 
 const PRESET_AVATARS = [
-  "https://api.dicebear.com/7.x/bottts/svg?seed=Mister1",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=PachangaLegend",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=FutsalKing",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=Golazo99",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=Crack10",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=CaptainPro",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
 ];
 
 export default function PerfilPage() {
@@ -142,7 +142,7 @@ export default function PerfilPage() {
             <div className="glass-panel p-6 rounded-3xl space-y-4 flex flex-col items-center text-center justify-center">
               <div className="relative group">
                 <img
-                  src={avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=user"}
+                  src={avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
                   alt="Avatar"
                   className="w-28 h-28 rounded-3xl object-cover border-4 border-emerald-500/50 shadow-2xl bg-slate-900"
                 />

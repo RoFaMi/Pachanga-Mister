@@ -23,40 +23,32 @@ export default function AdminPage() {
   const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      setMessage("La imagen debe ser menor a 8MB");
+      return;
+    }
 
     setUploadingPhoto(true);
     setMessage(null);
 
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const token = typeof window !== "undefined" ? localStorage.getItem("pachanga_token") : null;
-      const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers,
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (res.ok && data?.url) {
-        setPlayerPhotoUrl(data.url);
-        setMessage("Foto subida correctamente desde tu dispositivo");
-      } else {
-        setMessage(data?.error || "Error al subir la imagen");
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string;
+      if (base64Url) {
+        setPlayerPhotoUrl(base64Url);
+        setMessage("Foto de tu dispositivo cargada correctamente");
       }
-    } catch (err) {
-      console.error("File upload error:", err);
-      setMessage("Error de conexión al subir la imagen");
-    } finally {
       setUploadingPhoto(false);
-    }
+    };
+    reader.onerror = () => {
+      setMessage("Error al leer el archivo de imagen");
+      setUploadingPhoto(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   useEffect(() => {
@@ -541,7 +533,7 @@ export default function AdminPage() {
                           <div key={m.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 border border-emerald-900/40 text-xs gap-3">
                             <div className="flex items-center gap-2.5 overflow-hidden">
                               <img
-                                src={m.user?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=user"}
+                                src={m.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
                                 alt={m.user?.nickname}
                                 className="w-8 h-8 rounded-full border border-emerald-500/40 object-cover flex-shrink-0"
                               />

@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function POST(req: Request) {
   try {
@@ -22,23 +20,13 @@ export async function POST(req: Request) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64Data = buffer.toString("base64");
+    const mimeType = file.type || "image/png";
+    const dataUrl = `data:${mimeType};base64,${base64Data}`;
 
-    // Ensure public/uploads directory exists
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
-
-    // Generate unique filename
-    const ext = file.name.split(".").pop() || "png";
-    const filename = `player_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
-    const filePath = path.join(uploadsDir, filename);
-
-    // Save file locally
-    await writeFile(filePath, buffer);
-
-    const publicUrl = `/uploads/${filename}`;
-    return NextResponse.json({ url: publicUrl, message: "Imagen subida con éxito" });
+    return NextResponse.json({ url: dataUrl, message: "Imagen cargada con éxito" });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Error al subir la imagen al servidor" }, { status: 500 });
+    return NextResponse.json({ error: "Error al procesar la imagen" }, { status: 500 });
   }
 }
