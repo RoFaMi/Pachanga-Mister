@@ -253,7 +253,7 @@ export async function POST(req: Request) {
       }
 
       const sellerTeam = existingRosterEntry.fantasyTeam;
-      const clauseAmount = realPlayer.buyoutClause || Math.round(realPlayer.marketValue * 1.5 * 10) / 10;
+      const clauseAmount = existingRosterEntry.buyoutClause || realPlayer.buyoutClause || Math.round(realPlayer.marketValue * 1.5 * 10) / 10;
 
       // Check buyer budget
       if (fantasyTeam.budget < clauseAmount) {
@@ -274,7 +274,8 @@ export async function POST(req: Request) {
         where: { id: existingRosterEntry.id },
       });
 
-      // 2. Add player to buyer roster
+      // 2. Add player to buyer roster with +30% escalated clause
+      const newBuyoutClause = Math.round(clauseAmount * 1.3 * 10) / 10;
       const occupiedBuyerSlots = fantasyTeam.roster.map((r) => r.positionSlot);
       let targetSlot = positionSlot;
       if (!targetSlot) {
@@ -286,6 +287,7 @@ export async function POST(req: Request) {
           realPlayerId,
           positionSlot: targetSlot,
           purchasePrice: clauseAmount,
+          buyoutClause: newBuyoutClause,
         },
       });
 
@@ -300,12 +302,10 @@ export async function POST(req: Request) {
         data: { budget: { increment: clauseAmount } },
       });
 
-      // 4. Escalate Buyout Clause (+30% increase)
-      const newBuyoutClause = Math.round(clauseAmount * 1.3 * 10) / 10;
+      // 4. Update base player statistics
       await db.realPlayer.update({
         where: { id: realPlayerId },
         data: {
-          buyoutClause: newBuyoutClause,
           clauseIncrements: { increment: 1 },
         },
       });
@@ -364,16 +364,23 @@ export async function POST(req: Request) {
         data: { budget: { decrement: shieldCost } },
       });
 
-      const updatedPlayer = await db.realPlayer.update({
+      const currentClause = rosterEntry.buyoutClause || realPlayer.buyoutClause || Math.round((rosterEntry.purchasePrice || realPlayer.marketValue) * 1.5 * 10) / 10;
+      const updatedClause = Math.round((currentClause + clauseBoost) * 10) / 10;
+
+      await db.fantasyRoster.update({
+        where: { id: rosterEntry.id },
+        data: { buyoutClause: updatedClause },
+      });
+
+      await db.realPlayer.update({
         where: { id: realPlayerId },
         data: {
-          buyoutClause: { increment: clauseBoost },
           shieldedAtMatchdayNumber: matchdayNumber,
         },
       });
 
       return NextResponse.json({
-        message: `🛡️ Cláusula de ${realPlayer.name} blindada con éxito (+${clauseBoost}M €) para la Jornada #${matchdayNumber}. Nueva cláusula: ${updatedPlayer.buyoutClause}M €.`
+        message: `🛡️ Cláusula de ${realPlayer.name} blindada con éxito (+${clauseBoost}M €) para la Jornada #${matchdayNumber}. Nueva cláusula de tu jugador: ${updatedClause}M €.`,
       });
     }
 

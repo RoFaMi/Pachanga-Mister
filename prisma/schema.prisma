@@ -36,7 +36,7 @@ model League {
   logoUrl            String?
   maxMembers         Int            @default(18)
   initialBudget      Float          @default(30.0) // 30 Millions
-  maxOwnersPerPlayer Int            @default(18)   // Configurable owner limit
+  maxOwnersPerPlayer Int            @default(7)    // Up to 7 owners per real player
   scoringConfig      String?        // JSON string of scoring rules
   ownerId            String
   createdAt          DateTime       @default(now())
@@ -74,7 +74,7 @@ model RealPlayer {
   photoUrl          String?
   position          String              @default("ALA") // POR, CIERRE, ALA, PIVOT
   marketValue       Float               @default(10.0) // Millions
-  buyoutClause      Float               @default(15.0) // Millions (Cláusula de rescisión)
+  buyoutClause      Float               @default(15.0) // Millions (Cláusula de rescisión base)
   clauseIncrements  Int                 @default(0)    // Number of times clause was bought out
   isDemo            Boolean             @default(false)
   userId            String?             @unique
@@ -131,6 +131,7 @@ model FantasyRoster {
   realPlayerId  String
   positionSlot  String      // POR, CIERRE, ALA_1, ALA_2, PIVOT
   purchasePrice Float
+  buyoutClause  Float?      // Custom buyout clause for this manager's instance
   acquiredAt    DateTime    @default(now())
 
   fantasyTeam   FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)

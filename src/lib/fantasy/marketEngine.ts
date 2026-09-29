@@ -86,13 +86,15 @@ async function resolveMarketRound(leagueId: string, listings: any[]) {
             data: { budget: { decrement: bidAmount } },
           });
 
-          // 2. Add player to buyer roster
+          // 2. Add player to buyer roster with instance buyout clause (1.5x purchase price)
+          const instanceClause = Math.round(bidAmount * 1.5 * 10) / 10;
           await tx.fantasyRoster.create({
             data: {
               fantasyTeamId: buyerTeam.id,
               realPlayerId: listing.realPlayerId,
               positionSlot: targetSlot,
               purchasePrice: bidAmount,
+              buyoutClause: instanceClause,
             },
           });
 
@@ -174,51 +176,70 @@ async function resolveMarketRound(leagueId: string, listings: any[]) {
 }
 
 /**
- * Creates a new 12-hour market round with 6 system players + any user-listed players.
+ * Creates a new 12-hour market round with 7 random eligible players + any user-listed players.
  */
 export async function createNewMarketRound(leagueId: string) {
   const roundEndsAt = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours from now
+  const MAX_OWNERS_PER_PLAYER = 7;
+  const SYSTEM_LISTINGS_COUNT = 7;
 
-  // Get all players owned by fantasy teams
-  const ownedRosterEntries = await db.fantasyRoster.findMany({
+  // 1. Group roster entries by realPlayerId in this league to count owners
+  const rosterCounts = await db.fantasyRoster.groupBy({
+    by: ["realPlayerId"],
     where: { fantasyTeam: { leagueId } },
-    select: { realPlayerId: true },
-  });
-  const ownedPlayerIds = ownedRosterEntries.map((r) => r.realPlayerId);
-
-  // 1. Get all unowned real players in this league
-  const unownedPlayers = await db.realPlayer.findMany({
-    where: {
-      leagueId,
-      id: { notIn: ownedPlayerIds },
-    },
+    _count: { realPlayerId: true },
   });
 
-  const targetPlayers = unownedPlayers.length > 0 ? unownedPlayers : await db.realPlayer.findMany({ where: { leagueId } });
-
-  // Fetch all existing ACTIVE market listings in a SINGLE batch query
-  const existingActiveListings = await db.marketListing.findMany({
-    where: { leagueId, status: "ACTIVE" },
-    select: { realPlayerId: true },
-  });
-  const activePlayerIdSet = new Set(existingActiveListings.map((l) => l.realPlayerId));
-
-  // Filter players needing market listings
-  const playersToList = targetPlayers.filter((p) => !activePlayerIdSet.has(p.id));
-
-  if (playersToList.length > 0) {
-    await db.marketListing.createMany({
-      data: playersToList.map((player) => ({
-        leagueId,
-        realPlayerId: player.id,
-        askingPrice: player.marketValue,
-        roundEndsAt,
-        status: "ACTIVE",
-      })),
-    });
+  const ownerCountMap = new Map<string, number>();
+  for (const rc of rosterCounts) {
+    ownerCountMap.set(rc.realPlayerId, rc._count.realPlayerId);
   }
 
-  // Return current active listings
+  // 2. Fetch all real players in the league
+  const allLeaguePlayers = await db.realPlayer.findMany({
+    where: { leagueId },
+  });
+
+  // 3. Filter players that have fewer than 7 owners (MAX_OWNERS_PER_PLAYER = 7)
+  const eligiblePlayers = allLeaguePlayers.filter((p) => {
+    const count = ownerCountMap.get(p.id) || 0;
+    return count < MAX_OWNERS_PER_PLAYER;
+  });
+
+  // 4. Fetch currently ACTIVE system listings for this league
+  const existingActiveListings = await db.marketListing.findMany({
+    where: { leagueId, status: "ACTIVE" },
+    select: { realPlayerId: true, sellerTeamId: true },
+  });
+
+  const activeSystemPlayerIds = new Set(
+    existingActiveListings.filter((l) => l.sellerTeamId === null).map((l) => l.realPlayerId)
+  );
+
+  // 5. Fill active system listings up to 7 random eligible players
+  const currentActiveCount = activeSystemPlayerIds.size;
+  const neededCount = Math.max(0, SYSTEM_LISTINGS_COUNT - currentActiveCount);
+
+  if (neededCount > 0) {
+    const availablePool = eligiblePlayers.filter((p) => !activeSystemPlayerIds.has(p.id));
+    const shuffled = [...availablePool].sort(() => Math.random() - 0.5);
+    const selectedPlayers = shuffled.slice(0, neededCount);
+
+    if (selectedPlayers.length > 0) {
+      await db.marketListing.createMany({
+        data: selectedPlayers.map((player) => ({
+          leagueId,
+          realPlayerId: player.id,
+          askingPrice: player.marketValue,
+          misterOfferPrice: Math.round(player.marketValue * 0.9 * 10) / 10,
+          roundEndsAt,
+          status: "ACTIVE",
+        })),
+      });
+    }
+  }
+
+  // Return all current ACTIVE market listings
   return await db.marketListing.findMany({
     where: {
       leagueId,
