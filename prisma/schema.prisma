@@ -1,0 +1,372 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  fullName      String
+  nickname      String
+  avatarUrl     String?
+  role          String         @default("USER") // ADMIN or USER
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  memberships   LeagueMember[]
+  leaguesOwned  League[]       @relation("LeagueOwner")
+  fantasyTeams  FantasyTeam[]
+  ratingsGiven  MatchRating[]  @relation("Evaluator")
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  realPlayer    RealPlayer?
+}
+
+model League {
+  id                 String         @id @default(cuid())
+  name               String
+  code               String         @unique
+  description        String?
+  logoUrl            String?
+  maxMembers         Int            @default(18)
+  initialBudget      Float          @default(30.0) // 30 Millions
+  maxOwnersPerPlayer Int            @default(18)   // Configurable owner limit
+  scoringConfig      String?        // JSON string of scoring rules
+  ownerId            String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  owner              User           @relation("LeagueOwner", fields: [ownerId], references: [id])
+  members            LeagueMember[]
+  realPlayers        RealPlayer[]
+  fantasyTeams       FantasyTeam[]
+  matchdays          Matchday[]
+  transfers          Transfer[]
+  marketListings     MarketListing[]
+  auditLogs          AuditLog[]
+  directOffers       DirectOffer[]
+}
+
+model LeagueMember {
+  id        String   @id @default(cuid())
+  leagueId  String
+  userId    String
+  role      String   @default("PARTICIPANT") // ADMIN or PARTICIPANT
+  joinedAt  DateTime @default(now())
+
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, userId])
+}
+
+model RealPlayer {
+  id                String              @id @default(cuid())
+  leagueId          String
+  name              String
+  nickname          String
+  photoUrl          String?
+  position          String              @default("ALA") // POR, CIERRE, ALA, PIVOT
+  marketValue       Float               @default(10.0) // Millions
+  buyoutClause      Float               @default(15.0) // Millions (Cláusula de rescisión)
+  clauseIncrements  Int                 @default(0)    // Number of times clause was bought out
+  isDemo            Boolean             @default(false)
+  userId            String?             @unique
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  shieldedAtMatchdayNumber Int?
+  league            League              @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user              User?               @relation(fields: [userId], references: [id])
+  rosterEntries     FantasyRoster[]
+  captains          FantasyCaptain[]
+  lineups           MatchLineup[]
+  events            MatchEvent[]        @relation("PlayerEvents")
+  assistedEvents    MatchEvent[]        @relation("AssistedEvents")
+  ratingsReceived   MatchRating[]       @relation("TargetPlayer")
+  fantasyScores     FantasyScore[]
+  transfers         Transfer[]
+  marketValues      PlayerMarketValue[]
+  marketListings    MarketListing[]
+  directOffers      DirectOffer[]
+}
+
+model FantasyTeam {
+  id                 String           @id @default(cuid())
+  leagueId           String
+  userId             String
+  name               String
+  badgeUrl           String?
+  budget             Float            @default(30.0)
+  totalPoints        Float            @default(0.0)
+  lastMatchdayPoints Float            @default(0.0)
+  accumulatedEarnings Float           @default(0.0) // Money earned from matchday points
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  league             League           @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roster             FantasyRoster[]
+  captains           FantasyCaptain[]
+  scores             FantasyScore[]
+  boughtTransfers    Transfer[]       @relation("BuyerTeam")
+  soldTransfers      Transfer[]       @relation("SellerTeam")
+  sellerListings     MarketListing[]
+  bids               MarketBid[]
+  buyerDirectOffers  DirectOffer[]    @relation("BuyerDirectOffers")
+  sellerDirectOffers DirectOffer[]    @relation("SellerDirectOffers")
+
+  @@unique([leagueId, userId])
+}
+
+model FantasyRoster {
+  id            String      @id @default(cuid())
+  fantasyTeamId String
+  realPlayerId  String
+  positionSlot  String      // POR, CIERRE, ALA_1, ALA_2, PIVOT
+  purchasePrice Float
+  acquiredAt    DateTime    @default(now())
+
+  fantasyTeam   FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  realPlayer    RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([fantasyTeamId, realPlayerId])
+}
+
+model FantasyCaptain {
+  id            String      @id @default(cuid())
+  fantasyTeamId String
+  matchdayId    String
+  realPlayerId  String
+  createdAt     DateTime    @default(now())
+
+  fantasyTeam   FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  matchday      Matchday    @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  realPlayer    RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([fantasyTeamId, matchdayId])
+}
+
+model Matchday {
+  id            String           @id @default(cuid())
+  leagueId      String
+  number        Int
+  name          String
+  status        String           @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED
+  date          DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+
+  league        League           @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  matches       Match[]
+  matchTeams    MatchTeam[]
+  captains      FantasyCaptain[]
+  scores        FantasyScore[]
+
+  @@unique([leagueId, number])
+}
+
+model MatchTeam {
+  id            String        @id @default(cuid())
+  matchdayId    String
+  name          String        // Equipo A, Equipo B, Equipo C
+  color         String        // Hex or identifier
+
+  matchday      Matchday      @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  matchesAsA    Match[]       @relation("TeamAMatches")
+  matchesAsB    Match[]       @relation("TeamBMatches")
+  penaltyWins   Match[]       @relation("PenaltyWins")
+  lineups       MatchLineup[]
+}
+
+model Match {
+  id                  String        @id @default(cuid())
+  matchdayId          String
+  matchNumber         Int
+  teamAId             String
+  teamBId             String
+  scoreA              Int           @default(0)
+  scoreB              Int           @default(0)
+  status              String        @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, FINISHED
+  durationSeconds     Int           @default(600)
+  endedCondition      String?       // TIME_LIMIT, TWO_GOALS, MANUAL
+  isPenaltyShootout   Boolean       @default(false)
+  penaltyWinnerTeamId String?
+  startedAt           DateTime?
+  endedAt             DateTime?
+
+  matchday            Matchday      @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  teamA               MatchTeam     @relation("TeamAMatches", fields: [teamAId], references: [id])
+  teamB               MatchTeam     @relation("TeamBMatches", fields: [teamBId], references: [id])
+  penaltyWinner       MatchTeam?    @relation("PenaltyWins", fields: [penaltyWinnerTeamId], references: [id])
+  lineups             MatchLineup[]
+  events              MatchEvent[]
+  ratings             MatchRating[]
+  fantasyScores       FantasyScore[]
+}
+
+model MatchLineup {
+  id            String     @id @default(cuid())
+  matchId       String
+  matchTeamId   String
+  realPlayerId  String
+  isGoalkeeper  Boolean    @default(false)
+
+  match         Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchTeam     MatchTeam  @relation(fields: [matchTeamId], references: [id], onDelete: Cascade)
+  realPlayer    RealPlayer @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, realPlayerId])
+}
+
+model MatchEvent {
+  id               String     @id @default(cuid())
+  matchId          String
+  type             String     // GOAL, ASSIST, OWN_GOAL, DECISIVE_PENALTY
+  realPlayerId     String
+  assisterPlayerId String?
+  minute           Int?
+
+  match            Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  realPlayer       RealPlayer @relation("PlayerEvents", fields: [realPlayerId], references: [id], onDelete: Cascade)
+  assister         RealPlayer?@relation("AssistedEvents", fields: [assisterPlayerId], references: [id])
+}
+
+model MatchRating {
+  id                 String     @id @default(cuid())
+  matchId            String
+  evaluatorUserId    String
+  targetRealPlayerId String
+  score              Float
+  createdAt          DateTime   @default(now())
+
+  match              Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  evaluator          User       @relation("Evaluator", fields: [evaluatorUserId], references: [id], onDelete: Cascade)
+  targetPlayer       RealPlayer @relation("TargetPlayer", fields: [targetRealPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, evaluatorUserId, targetRealPlayerId])
+}
+
+model FantasyScore {
+  id                      String      @id @default(cuid())
+  matchdayId              String
+  matchId                 String?
+  fantasyTeamId           String
+  realPlayerId            String
+  goalPoints              Float       @default(0)
+  assistPoints            Float       @default(0)
+  winPoints               Float       @default(0)
+  lossPoints              Float       @default(0)
+  goalkeeperConcededPoints Float      @default(0)
+  decisivePenaltyPoints   Float       @default(0)
+  ratingPoints            Float       @default(0)
+  isCaptain               Boolean     @default(false)
+  totalPoints             Float       @default(0)
+
+  matchday                Matchday    @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  match                   Match?      @relation(fields: [matchId], references: [id])
+  fantasyTeam             FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  realPlayer              RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+}
+
+model Transfer {
+  id            String       @id @default(cuid())
+  leagueId      String
+  buyerTeamId   String?
+  sellerTeamId  String?
+  realPlayerId  String
+  price         Float
+  type          String       // BUY_FREE_AGENT, SELL, TRADE, MARKET_BID, MISTER_BUYBACK
+  bidsSummary   String?      // JSON string of all bids placed during resolution
+  createdAt     DateTime     @default(now())
+
+  league        League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  buyerTeam     FantasyTeam? @relation("BuyerTeam", fields: [buyerTeamId], references: [id])
+  sellerTeam    FantasyTeam? @relation("SellerTeam", fields: [sellerTeamId], references: [id])
+  realPlayer    RealPlayer   @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+}
+
+model PlayerMarketValue {
+  id           String     @id @default(cuid())
+  realPlayerId String
+  value        Float
+  createdAt    DateTime   @default(now())
+
+  realPlayer   RealPlayer @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO") // INVITATION, MATCHDAY, MARKET, RATING, RESULT
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  leagueId  String
+  userId    String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MarketListing {
+  id               String      @id @default(cuid())
+  leagueId         String
+  realPlayerId     String
+  sellerTeamId     String?     // null if system player, or fantasyTeamId if listed by user
+  askingPrice      Float
+  misterOfferPrice Float?      // 90% of marketValue offered by Míster
+  roundEndsAt      DateTime
+  status           String      @default("ACTIVE") // ACTIVE, OFFER_PENDING, ACCEPTED, REJECTED, RESOLVED
+  createdAt        DateTime    @default(now())
+
+  league        League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  realPlayer    RealPlayer   @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+  sellerTeam    FantasyTeam? @relation(fields: [sellerTeamId], references: [id])
+  bids          MarketBid[]
+}
+
+model MarketBid {
+  id            String        @id @default(cuid())
+  listingId     String
+  fantasyTeamId String
+  amount        Float
+  createdAt     DateTime      @default(now())
+
+  listing       MarketListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  fantasyTeam   FantasyTeam   @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, fantasyTeamId])
+}
+
+model DirectOffer {
+  id              String      @id @default(cuid())
+  leagueId        String
+  buyerTeamId     String
+  sellerTeamId    String
+  realPlayerId    String
+  amount          Float
+  status          String      @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt       DateTime    @default(now())
+
+  league          League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  buyerTeam       FantasyTeam @relation("BuyerDirectOffers", fields: [buyerTeamId], references: [id], onDelete: Cascade)
+  sellerTeam      FantasyTeam @relation("SellerDirectOffers", fields: [sellerTeamId], references: [id], onDelete: Cascade)
+  realPlayer      RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+}
+
+
