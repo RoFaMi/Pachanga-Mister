@@ -186,36 +186,32 @@ export async function createNewMarketRound(leagueId: string) {
   });
   const ownedPlayerIds = ownedRosterEntries.map((r) => r.realPlayerId);
 
-  // 1. First try unowned system players
-  let availableSystemPlayers = await db.realPlayer.findMany({
+  // 1. Get all unowned real players in this league
+  const unownedPlayers = await db.realPlayer.findMany({
     where: {
       leagueId,
       id: { notIn: ownedPlayerIds },
     },
   });
 
-  // 2. Fall back to all RealPlayers in the league if unowned pool is less than 6
-  if (availableSystemPlayers.length < 6) {
-    availableSystemPlayers = await db.realPlayer.findMany({
-      where: { leagueId },
-    });
-  }
+  const targetPlayers = unownedPlayers.length > 0 ? unownedPlayers : await db.realPlayer.findMany({ where: { leagueId } });
 
-  // Shuffle & pick up to 6 system players
-  const shuffled = [...availableSystemPlayers].sort(() => 0.5 - Math.random());
-  const selectedSystemPlayers = shuffled.slice(0, 6);
-
-  // Create listings for system players
-  for (const player of selectedSystemPlayers) {
-    await db.marketListing.create({
-      data: {
-        leagueId,
-        realPlayerId: player.id,
-        askingPrice: player.marketValue,
-        roundEndsAt,
-        status: "ACTIVE",
-      },
+  // Create active listings for all available players
+  for (const player of targetPlayers) {
+    const existingActive = await db.marketListing.findFirst({
+      where: { leagueId, realPlayerId: player.id, status: "ACTIVE" },
     });
+    if (!existingActive) {
+      await db.marketListing.create({
+        data: {
+          leagueId,
+          realPlayerId: player.id,
+          askingPrice: player.marketValue,
+          roundEndsAt,
+          status: "ACTIVE",
+        },
+      });
+    }
   }
 
   // Return current active listings

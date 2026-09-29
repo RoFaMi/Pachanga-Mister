@@ -46,7 +46,19 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ player: newPlayer, message: `Jugador real '${name}' creado con éxito` });
+    // Auto-list player on the transfer market for 48h
+    const roundEndsAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    await db.marketListing.create({
+      data: {
+        leagueId,
+        realPlayerId: newPlayer.id,
+        askingPrice: val,
+        roundEndsAt,
+        status: "ACTIVE",
+      },
+    });
+
+    return NextResponse.json({ player: newPlayer, message: `Jugador real '${name}' creado con éxito y puesto en el mercado` });
   } catch (error) {
     console.error("Create Real Player Error:", error);
     return NextResponse.json({ error: "Error al crear el jugador real" }, { status: 500 });
