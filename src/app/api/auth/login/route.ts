@@ -53,6 +53,8 @@ export async function POST(req: Request) {
     return res;
   } catch (error) {
     console.error("Login Error:", error);
-    return NextResponse.json({ error: "Error en el servidor al iniciar sesión" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: `Error en el servidor al iniciar sesión: ${msg}` }, { status: 500 });
   }
 }
+
