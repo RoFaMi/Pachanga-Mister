@@ -15,7 +15,13 @@ export async function safeFetchJson<T = any>(url: string, options: RequestInit =
     if (!res.ok) return null;
     const text = await res.text();
     if (!text || !text.trim()) return null;
-    return JSON.parse(text) as T;
+    const data = JSON.parse(text) as T;
+    if (data && typeof data === "object" && (data as any).user && typeof window !== "undefined") {
+      try {
+        localStorage.setItem("pachanga_user", JSON.stringify((data as any).user));
+      } catch (e) {}
+    }
+    return data;
   } catch (e) {
     console.error(`Fetch JSON error for ${url}:`, e);
     return null;

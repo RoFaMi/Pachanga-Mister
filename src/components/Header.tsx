@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Trophy, Bell, Shield, User, ArrowRightLeft, LogOut, UserCheck } from "lucide-react";
 
@@ -14,6 +14,26 @@ interface HeaderProps {
 }
 
 export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLogout }: HeaderProps) {
+  const [localUser, setLocalUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      setLocalUser(user);
+      try {
+        localStorage.setItem("pachanga_user", JSON.stringify(user));
+      } catch (e) {}
+    } else if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pachanga_user");
+      if (saved) {
+        try {
+          setLocalUser(JSON.parse(saved));
+        } catch (e) {}
+      }
+    }
+  }, [user]);
+
+  const activeUser = user || localUser;
+
   const handleLogout = async () => {
     if (onLogout) {
       onLogout();
@@ -77,7 +97,7 @@ export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLog
         </Link>
 
         {/* User Badge & Logout */}
-        {user ? (
+        {activeUser ? (
           <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-emerald-950/40 border border-emerald-800/40">
             <Link
               href="/perfil"
@@ -85,11 +105,11 @@ export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLog
               title="Ir a mi perfil para cambiar nombre y foto"
             >
               <img
-                src={user.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=user"}
-                alt={user.nickname}
+                src={activeUser.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                alt={activeUser.nickname}
                 className="w-7 h-7 rounded-full object-cover border border-emerald-500/40"
               />
-              <span className="text-xs font-bold text-white hidden sm:inline">{user.nickname}</span>
+              <span className="text-xs font-bold text-white hidden sm:inline">{activeUser.nickname}</span>
             </Link>
             <button
               onClick={handleLogout}

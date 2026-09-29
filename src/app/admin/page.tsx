@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ShieldAlert, Plus, CheckCircle2, RefreshCw, Download, Users, Calendar, Lock, ArrowLeft, ArrowRightLeft, UserPlus, Trash2, Upload, UserMinus, UserX, LogOut } from "lucide-react";
+import { ShieldAlert, Plus, CheckCircle2, RefreshCw, Download, Users, Calendar, Lock, ArrowLeft, ArrowRightLeft, UserPlus, Trash2, Upload, UserMinus, UserX, LogOut, Key, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
@@ -22,6 +22,70 @@ export default function AdminPage() {
   const [creatingPlayer, setCreatingPlayer] = useState(false);
   const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [resettingUserId, setResettingUserId] = useState<string | null>(null);
+  const [resettingStats, setResettingStats] = useState(false);
+
+  const handleResetUserPassword = async (userId: string, nickname: string) => {
+    const newPassword = prompt(`Introduce la nueva contraseña para el mánager '${nickname}':`);
+    if (!newPassword) return;
+    if (newPassword.trim().length < 4) {
+      alert("La contraseña debe tener al menos 4 caracteres.");
+      return;
+    }
+
+    setResettingUserId(userId);
+    setMessage(null);
+
+    try {
+      const res = await authFetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPassword.trim() }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(data.message);
+      } else {
+        setMessage(data.error || "Error al restablecer la contraseña");
+      }
+    } catch (err) {
+      console.error("Reset password error:", err);
+      setMessage("Error al restablecer la contraseña");
+    } finally {
+      setResettingUserId(null);
+    }
+  };
+
+  const handleResetRealStats = async () => {
+    if (!confirm("⚠️ ¿Estás seguro de que deseas REINICIAR TODAS LAS ESTADÍSTICAS REALES Y JORNADAS? Esta acción dejará los marcadores a 0 ya que aún no hay jornada jugada.")) {
+      return;
+    }
+
+    setResettingStats(true);
+    setMessage(null);
+
+    try {
+      const res = await authFetch("/api/admin/reset-stats", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(data.message);
+        fetchInitialData();
+      } else {
+        setMessage(data.error || "Error al reiniciar estadísticas");
+      }
+    } catch (err) {
+      console.error("Reset stats error:", err);
+      setMessage("Error al reiniciar estadísticas");
+    } finally {
+      setResettingStats(false);
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -173,11 +237,6 @@ export default function AdminPage() {
       setMessage("Error al eliminar el jugador");
     } finally {
       setDeletingPlayerId(null);
-    }
-  };
-
-  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-
   const handleDeleteUser = async (userId: string, nickname: string) => {
     if (!confirm(`¿Estás seguro de que deseas eliminar al mánager '${nickname}' de la liga y del sistema?`)) {
       return;
@@ -547,7 +606,18 @@ export default function AdminPage() {
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button
+                                type="button"
+                                disabled={resettingUserId === m.userId}
+                                onClick={() => handleResetUserPassword(m.userId, m.user?.nickname || m.user?.fullName)}
+                                className="py-1.5 px-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center gap-1 transition-all disabled:opacity-50"
+                                title="Restablecer contraseña de este usuario"
+                              >
+                                <Key className="w-3.5 h-3.5" />
+                                <span>Contraseña</span>
+                              </button>
+
                               {!isSelf && !isCurrentOwner && (
                                 <button
                                   type="button"
@@ -565,6 +635,25 @@ export default function AdminPage() {
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* 4. Reset Real Statistics Card */}
+                  <div className="glass-panel p-5 rounded-3xl space-y-3 border border-amber-500/30 bg-amber-950/10">
+                    <h3 className="text-base font-black text-white flex items-center gap-2">
+                      <RotateCcw className="w-5 h-5 text-amber-400" /> Reiniciar Estadísticas Reales y Marcadores
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      Elimina todas las jornadas, partidos registrados y puntuaciones para empezar la liga limpia desde 0 puntos.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={resettingStats}
+                      onClick={handleResetRealStats}
+                      className="w-full py-3 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-extrabold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-4 h-4 text-amber-400" />
+                      <span>{resettingStats ? "REINICIANDO..." : "REINICIAR ESTADÍSTICAS (DEJAR TODO A 0)"}</span>
+                    </button>
                   </div>
 
                   {/* 4. Leave League & Delete Account Section */}

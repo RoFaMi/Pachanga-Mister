@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -22,6 +23,25 @@ interface NavigationProps {
 
 export function Navigation({ user, activeLeague, onLogout }: NavigationProps) {
   const pathname = usePathname();
+  const [localUser, setLocalUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      setLocalUser(user);
+      try {
+        localStorage.setItem("pachanga_user", JSON.stringify(user));
+      } catch (e) {}
+    } else if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pachanga_user");
+      if (saved) {
+        try {
+          setLocalUser(JSON.parse(saved));
+        } catch (e) {}
+      }
+    }
+  }, [user]);
+
+  const activeUser = user || localUser;
 
   const navItems = [
     { href: "/", label: "Inicio", icon: LayoutDashboard },
@@ -32,7 +52,7 @@ export function Navigation({ user, activeLeague, onLogout }: NavigationProps) {
     { href: "/valoracion", label: "Valoraciones", icon: Star },
   ];
 
-  const isAdmin = user?.role === "ADMIN" || activeLeague?.ownerId === user?.id;
+  const isAdmin = activeUser?.role === "ADMIN" || activeLeague?.ownerId === activeUser?.id;
 
   if (isAdmin) {
     navItems.push({ href: "/admin", label: "Admin", icon: ShieldAlert, highlight: false });
@@ -95,17 +115,17 @@ export function Navigation({ user, activeLeague, onLogout }: NavigationProps) {
         </nav>
 
         {/* User Info & Logout */}
-        {user ? (
+        {activeUser ? (
           <div className="pt-4 border-t border-emerald-900/30 flex items-center justify-between">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <img
-                src={user.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=user"}
-                alt={user.nickname}
+                src={activeUser.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                alt={activeUser.nickname}
                 className="w-9 h-9 rounded-full bg-emerald-900/50 border border-emerald-500/30 flex-shrink-0 object-cover"
               />
               <div className="overflow-hidden">
-                <p className="text-sm font-bold text-white truncate">{user.nickname}</p>
-                <p className="text-[11px] text-slate-400 capitalize truncate">{user.role}</p>
+                <p className="text-sm font-bold text-white truncate">{activeUser.nickname}</p>
+                <p className="text-[11px] text-slate-400 capitalize truncate">{activeUser.role}</p>
               </div>
             </div>
             <button

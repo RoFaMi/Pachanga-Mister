@@ -196,22 +196,26 @@ export async function createNewMarketRound(leagueId: string) {
 
   const targetPlayers = unownedPlayers.length > 0 ? unownedPlayers : await db.realPlayer.findMany({ where: { leagueId } });
 
-  // Create active listings for all available players
-  for (const player of targetPlayers) {
-    const existingActive = await db.marketListing.findFirst({
-      where: { leagueId, realPlayerId: player.id, status: "ACTIVE" },
+  // Fetch all existing ACTIVE market listings in a SINGLE batch query
+  const existingActiveListings = await db.marketListing.findMany({
+    where: { leagueId, status: "ACTIVE" },
+    select: { realPlayerId: true },
+  });
+  const activePlayerIdSet = new Set(existingActiveListings.map((l) => l.realPlayerId));
+
+  // Filter players needing market listings
+  const playersToList = targetPlayers.filter((p) => !activePlayerIdSet.has(p.id));
+
+  if (playersToList.length > 0) {
+    await db.marketListing.createMany({
+      data: playersToList.map((player) => ({
+        leagueId,
+        realPlayerId: player.id,
+        askingPrice: player.marketValue,
+        roundEndsAt,
+        status: "ACTIVE",
+      })),
     });
-    if (!existingActive) {
-      await db.marketListing.create({
-        data: {
-          leagueId,
-          realPlayerId: player.id,
-          askingPrice: player.marketValue,
-          roundEndsAt,
-          status: "ACTIVE",
-        },
-      });
-    }
   }
 
   // Return current active listings
