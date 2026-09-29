@@ -168,9 +168,9 @@ async function main() {
       userId: adminUser.id,
       name: "Míster Pachanga FC",
       badgeUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80",
-      budget: 8.5, // 50 - sum(values)
-      totalPoints: 48.5,
-      lastMatchdayPoints: 24.5,
+      budget: 8.5,
+      totalPoints: 0.0,
+      lastMatchdayPoints: 0.0,
     },
   });
 
@@ -195,8 +195,8 @@ async function main() {
       name: "Pablito Team",
       badgeUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=150&auto=format&fit=crop&q=80",
       budget: 10.0,
-      totalPoints: 42.0,
-      lastMatchdayPoints: 21.0,
+      totalPoints: 0.0,
+      lastMatchdayPoints: 0.0,
     },
   });
   const user1Roster = [
@@ -220,8 +220,8 @@ async function main() {
       name: "Don Pedri Magic",
       badgeUrl: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=150&auto=format&fit=crop&q=80",
       budget: 12.0,
-      totalPoints: 39.5,
-      lastMatchdayPoints: 19.5,
+      totalPoints: 0.0,
+      lastMatchdayPoints: 0.0,
     },
   });
   const user2Roster = [
@@ -235,6 +235,32 @@ async function main() {
     await prisma.fantasyRoster.create({
       data: { fantasyTeamId: ftUser2.id, realPlayerId: r.realPlayerId, positionSlot: r.positionSlot, purchasePrice: r.price },
     });
+  }
+
+  console.log("🛒 Populating Market Listings...");
+  const roundEndsAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
+  // Pick free agent players not assigned to any roster
+  const marketPlayers = [
+    playerByNick("Gavi"),
+    playerByNick("Chispa"),
+    playerByNick("Alquimia"),
+    playerByNick("Diablo"),
+    playerByNick("Matador"),
+    playerByNick("Joselu Mato"),
+    playerByNick("Lucas Vázquez"),
+  ];
+  for (const mp of marketPlayers) {
+    if (mp) {
+      await prisma.marketListing.create({
+        data: {
+          leagueId: league.id,
+          realPlayerId: mp.id,
+          askingPrice: mp.marketValue,
+          roundEndsAt,
+          status: "ACTIVE",
+        },
+      });
+    }
   }
 
   console.log("📅 Creating Matchdays & Matches...");

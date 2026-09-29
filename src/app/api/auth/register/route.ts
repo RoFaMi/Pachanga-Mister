@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         fullName,
         nickname,
         role: "USER",
-        avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nickname)}`,
+        avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
       },
     });
 

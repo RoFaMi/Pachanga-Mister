@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     }
 
     const val = parseFloat(marketValue) || 10.0;
-    const defaultPhoto = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nickname)}`;
+    const defaultPhoto = "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80";
 
     const newPlayer = await db.realPlayer.create({
       data: {

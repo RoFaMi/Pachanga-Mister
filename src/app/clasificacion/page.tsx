@@ -221,7 +221,7 @@ export default function ClasificacionPage() {
                         {/* Team Info */}
                         <div className="flex items-center gap-3">
                           <img
-                            src={team.user?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=user"}
+                            src={team.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
                             alt={team.name}
                             className="w-10 h-10 rounded-full object-cover border border-emerald-500/30 group-hover:scale-105 transition-transform"
                           />
