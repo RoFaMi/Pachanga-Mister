@@ -52,23 +52,28 @@ export default function MercadoPage() {
 
   const fetchInitialData = async () => {
     try {
-      const dataUser = await safeFetchJson<{ user: any }>("/api/auth/me");
+      const [dataUser, dataLeagues] = await Promise.all([
+        safeFetchJson<{ user: any }>("/api/auth/me"),
+        safeFetchJson<{ leagues: any[] }>("/api/leagues"),
+      ]);
+
       if (dataUser?.user) setUser(dataUser.user);
 
-      const dataLeagues = await safeFetchJson<{ leagues: any[] }>("/api/leagues");
       if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
         const demoLeague = dataLeagues.leagues[0];
-        const dataDetail = await safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${demoLeague.id}`);
+
+        const [dataDetail, dataMarket] = await Promise.all([
+          safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${demoLeague.id}`),
+          safeFetchJson<{
+            listings: any[];
+            myBids: any[];
+            pendingMisterOffers: any[];
+            incomingDirectOffers: any[];
+          }>(`/api/market?leagueId=${demoLeague.id}`),
+        ]);
+
         if (dataDetail?.league) setLeague(dataDetail.league);
         if (dataDetail?.myFantasyTeam) setFantasyTeam(dataDetail.myFantasyTeam);
-
-        // Fetch 12h Market Round data, Mister Offers, and Incoming Direct Manager Offers
-        const dataMarket = await safeFetchJson<{
-          listings: any[];
-          myBids: any[];
-          pendingMisterOffers: any[];
-          incomingDirectOffers: any[];
-        }>(`/api/market?leagueId=${demoLeague.id}`);
 
         if (dataMarket?.listings) setListings(dataMarket.listings);
         if (dataMarket?.pendingMisterOffers) setPendingMisterOffers(dataMarket.pendingMisterOffers);

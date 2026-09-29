@@ -37,20 +37,26 @@ export default function DashboardPage() {
 
   const fetchInitialData = async () => {
     try {
-      const dataUser = await safeFetchJson<{ user: any }>("/api/auth/me");
+      const [dataUser, dataLeagues] = await Promise.all([
+        safeFetchJson<{ user: any }>("/api/auth/me"),
+        safeFetchJson<{ leagues: any[] }>("/api/leagues"),
+      ]);
+
       if (dataUser?.user) {
         setUser(dataUser.user);
-        localStorage.setItem("pachanga_user", JSON.stringify(dataUser.user));
+        try { localStorage.setItem("pachanga_user", JSON.stringify(dataUser.user)); } catch {}
       }
 
-      const dataLeagues = await safeFetchJson<{ leagues: any[] }>("/api/leagues");
       if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
         const activeL = dataLeagues.leagues[0];
-        const dataDetail = await safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${activeL.id}`);
+
+        const [dataDetail, dataTransfers] = await Promise.all([
+          safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${activeL.id}`),
+          safeFetchJson<{ recentTransfers: any[] }>(`/api/transfers/recent?leagueId=${activeL.id}`),
+        ]);
+
         if (dataDetail?.league) setLeague(dataDetail.league);
         if (dataDetail?.myFantasyTeam) setFantasyTeam(dataDetail.myFantasyTeam);
-
-        const dataTransfers = await safeFetchJson<{ recentTransfers: any[] }>(`/api/transfers/recent?leagueId=${activeL.id}`);
         if (dataTransfers?.recentTransfers) setRecentTransfers(dataTransfers.recentTransfers);
       }
     } catch (e) {

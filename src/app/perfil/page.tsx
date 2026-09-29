@@ -60,7 +60,11 @@ export default function PerfilPage() {
 
   const fetchProfile = async () => {
     try {
-      const dataUser = await safeFetchJson<{ user: any }>("/api/user/profile");
+      const [dataUser, dataLeagues] = await Promise.all([
+        safeFetchJson<{ user: any }>("/api/user/profile"),
+        safeFetchJson<{ leagues: any[] }>("/api/leagues"),
+      ]);
+
       if (dataUser?.user) {
         setUser(dataUser.user);
         setFullName(dataUser.user.fullName || "");
@@ -68,7 +72,6 @@ export default function PerfilPage() {
         setAvatarUrl(dataUser.user.avatarUrl || "");
       }
 
-      const dataLeagues = await safeFetchJson<{ leagues: any[] }>("/api/leagues");
       if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
         setLeague(dataLeagues.leagues[0]);
       }

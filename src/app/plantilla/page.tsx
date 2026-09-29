@@ -26,10 +26,13 @@ export default function PlantillaPage() {
 
   const fetchInitialData = async () => {
     try {
-      const dataUser = await safeFetchJson<{ user: any }>("/api/auth/me");
+      const [dataUser, dataLeagues] = await Promise.all([
+        safeFetchJson<{ user: any }>("/api/auth/me"),
+        safeFetchJson<{ leagues: any[] }>("/api/leagues"),
+      ]);
+
       if (dataUser?.user) setUser(dataUser.user);
 
-      const dataLeagues = await safeFetchJson<{ leagues: any[] }>("/api/leagues");
       if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
         const demoLeague = dataLeagues.leagues[0];
         const dataDetail = await safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${demoLeague.id}`);
