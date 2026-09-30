@@ -191,6 +191,13 @@ export default function MercadoPage() {
       const data = await res.json();
       if (res.ok) {
         setMessage({ text: data.message, type: "success" });
+        // Optimistically remove bid from local state immediately
+        setMyBids((prev) => prev.filter((b) => b.listingId !== listingId));
+        setBidInputs((prev) => {
+          const next = { ...prev };
+          delete next[listingId];
+          return next;
+        });
         await fetchInitialData();
       } else {
         setMessage({ text: data.error, type: "error" });

@@ -5,7 +5,7 @@ import { User, Camera, Save, CheckCircle, AlertCircle, ArrowLeft, Trophy, Shield
 import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
-import { safeFetchJson } from "@/lib/api";
+import { safeFetchJson, authFetch } from "@/lib/api";
 
 const PRESET_AVATARS = [
   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
@@ -103,7 +103,7 @@ export default function PerfilPage() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/user/profile", {
+      const res = await authFetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -116,7 +116,15 @@ export default function PerfilPage() {
       const data = await res.json();
       if (res.ok) {
         setMessage({ text: data.message || "Perfil guardado con éxito", type: "success" });
-        setUser(data.user);
+        if (data.user) {
+          setUser(data.user);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("pachanga_user", JSON.stringify(data.user));
+            if (data.token) {
+              localStorage.setItem("pachanga_token", data.token);
+            }
+          }
+        }
       } else {
         setMessage({ text: data.error || "Error al actualizar perfil", type: "error" });
       }

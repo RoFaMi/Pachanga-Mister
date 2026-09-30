@@ -90,6 +90,9 @@ export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLog
               <img
                 src={activeUser.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
                 alt={activeUser.nickname}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+                }}
                 className="w-7 h-7 rounded-full object-cover border border-emerald-500/40"
               />
               <span className="text-xs font-bold text-white hidden sm:inline">{activeUser.nickname}</span>

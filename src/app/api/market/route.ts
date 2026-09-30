@@ -61,6 +61,13 @@ export async function GET(req: Request) {
       db.league.findUnique({
         where: { id: leagueId },
         include: {
+          realPlayers: {
+            include: {
+              rosterEntries: {
+                include: { fantasyTeam: true },
+              },
+            },
+          },
           matchdays: {
             where: { status: "SCHEDULED" },
             orderBy: { number: "asc" },
