@@ -135,7 +135,20 @@ export async function POST(req: Request) {
         }, { status: 400 });
       }
 
-      // Upsert Bid
+      if (fantasyTeam.roster.length >= 5) {
+        return NextResponse.json({
+          error: "Tu plantilla ya tiene el máximo de 5 jugadores. Vende a uno antes de pujar por un nuevo jugador."
+        }, { status: 400 });
+      }
+
+      const alreadyOwnsPlayer = fantasyTeam.roster.some((r) => r.realPlayerId === listing.realPlayerId);
+      if (alreadyOwnsPlayer) {
+        return NextResponse.json({
+          error: "Ya tienes una ficha de este jugador en tu plantilla."
+        }, { status: 400 });
+      }
+
+      // Upsert Bid with status PENDING and server timestamp
       await db.marketBid.upsert({
         where: {
           listingId_fantasyTeamId: {
@@ -147,10 +160,12 @@ export async function POST(req: Request) {
           listingId,
           fantasyTeamId: fantasyTeam.id,
           amount: bidAmount,
+          status: "PENDING",
         },
         update: {
           amount: bidAmount,
-          createdAt: new Date(),
+          status: "PENDING",
+          createdAt: new Date(), // Reset server timestamp on offer update
         },
       });
 
@@ -188,7 +203,7 @@ export async function POST(req: Request) {
 
       // Get current active market round end time
       const activeListings = await getOrResolveMarketRound(leagueId);
-      const roundEndsAt = activeListings.length > 0 ? activeListings[0].roundEndsAt : new Date(Date.now() + 12 * 60 * 60 * 1000);
+      const roundEndsAt = activeListings.length > 0 ? activeListings[0].roundEndsAt : new Date(Date.now() + 8 * 60 * 60 * 1000);
 
       await db.marketListing.create({
         data: {
@@ -262,10 +277,10 @@ export async function POST(req: Request) {
         }, { status: 400 });
       }
 
-      // Check max roster length (6 players: 5 starters + 1er cambio)
-      if (fantasyTeam.roster.length >= 6) {
+      // Check max roster length (5 futsal players max)
+      if (fantasyTeam.roster.length >= 5) {
         return NextResponse.json({
-          error: "Tu plantilla ya tiene el límite máximo de 6 jugadores. Vende a uno antes de ejecutar el clausulazo."
+          error: "Tu plantilla ya tiene el límite máximo de 5 jugadores. Vende a uno antes de ejecutar el clausulazo."
         }, { status: 400 });
       }
 
@@ -279,7 +294,7 @@ export async function POST(req: Request) {
       const occupiedBuyerSlots = fantasyTeam.roster.map((r) => r.positionSlot);
       let targetSlot = positionSlot;
       if (!targetSlot) {
-        targetSlot = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT", "SUPLENTE_1"].find((s) => !occupiedBuyerSlots.includes(s)) || "SUPLENTE_1";
+        targetSlot = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"].find((s) => !occupiedBuyerSlots.includes(s)) || "PIVOT";
       }
       await db.fantasyRoster.create({
         data: {

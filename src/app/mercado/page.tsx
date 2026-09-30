@@ -20,7 +20,9 @@ export default function MercadoPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   
-  // Countdown timer state for 12h market round
+  // Countdown timer state for 8h market round
+  const [nextRenewalAt, setNextRenewalAt] = useState<string | null>(null);
+  const [cycleNumber, setCycleNumber] = useState<number>(1);
   const [timeLeftStr, setTimeLeftStr] = useState<string>("");
 
   useEffect(() => {
@@ -28,17 +30,17 @@ export default function MercadoPage() {
   }, []);
 
   useEffect(() => {
-    if (listings.length === 0) return;
-    const roundEndsAt = new Date(listings[0].roundEndsAt).getTime();
+    if (!nextRenewalAt) return;
+    const renewalTime = new Date(nextRenewalAt).getTime();
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const diff = roundEndsAt - now;
+      const diff = renewalTime - now;
 
       if (diff <= 0) {
-        setTimeLeftStr("¡Resolviendo mercado...");
+        setTimeLeftStr("¡Renovando mercado...");
         clearInterval(interval);
-        fetchInitialData(); // Re-fetch to trigger resolution
+        fetchInitialData(); // Re-fetch to load new cycle listings
       } else {
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -48,7 +50,7 @@ export default function MercadoPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [listings]);
+  }, [nextRenewalAt]);
 
   const fetchInitialData = async () => {
     try {
@@ -69,6 +71,8 @@ export default function MercadoPage() {
             myBids: any[];
             pendingMisterOffers: any[];
             incomingDirectOffers: any[];
+            nextRenewalAt?: string;
+            cycleNumber?: number;
           }>(`/api/market?leagueId=${demoLeague.id}`),
         ]);
 
@@ -78,6 +82,8 @@ export default function MercadoPage() {
         if (dataMarket?.listings) setListings(dataMarket.listings);
         if (dataMarket?.pendingMisterOffers) setPendingMisterOffers(dataMarket.pendingMisterOffers);
         if (dataMarket?.incomingDirectOffers) setIncomingDirectOffers(dataMarket.incomingDirectOffers);
+        if (dataMarket?.nextRenewalAt) setNextRenewalAt(dataMarket.nextRenewalAt);
+        if (dataMarket?.cycleNumber) setCycleNumber(dataMarket.cycleNumber);
         if (dataMarket?.myBids) {
           setMyBids(dataMarket.myBids);
           const prefill: Record<string, string> = {};
@@ -271,7 +277,7 @@ export default function MercadoPage() {
               <div>
                 <h1 className="text-xl font-extrabold text-white">Mercado de Fichajes</h1>
                 <p className="text-xs text-emerald-400 font-semibold">
-                  Pujas secretas de 12h, ofertas recibidas y clausulazos a rivales
+                  Mercado 8h (08:00, 16:00, 00:00) • Pujas secretas, ofertas y clausulazos
                 </p>
               </div>
             </div>
@@ -285,7 +291,7 @@ export default function MercadoPage() {
               <div className="w-px h-8 bg-emerald-900/40"></div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Plantilla</span>
-                <span className="text-base font-black text-amber-400">{myRosterIds.length}/6</span>
+                <span className="text-base font-black text-amber-400">{myRosterIds.length}/5</span>
               </div>
             </div>
           </div>
@@ -424,34 +430,34 @@ export default function MercadoPage() {
             </div>
           )}
 
-          {/* 12h Market Cycle Status Banner */}
+          {/* 8h Market Cycle Status Banner */}
           <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/40 space-y-3 shadow-xl">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-emerald-900/50 pb-3">
               <div className="flex items-center gap-2 text-amber-400 font-black text-sm">
                 <Clock className="w-5 h-5 text-amber-400 animate-pulse" />
-                <span>Tiempo Restante del Mercado Actual:</span>
+                <span>Renovación del Mercado (Ciclo #{cycleNumber}):</span>
                 <span className="bg-amber-400 text-slate-950 px-3 py-1 rounded-xl text-base font-black shadow-md">
-                  {timeLeftStr || "12h 00m 00s"}
+                  {timeLeftStr || "08h 00m 00s"}
                 </span>
               </div>
 
               <div className="text-xs font-bold text-slate-300">
-                <span>Ronda de 6 Jugadores en Subasta</span>
+                <span>Ronda de 7 Jugadores en Subasta</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-slate-300">
               <div className="p-2.5 rounded-xl bg-slate-950/60 border border-emerald-900/40">
-                <strong className="text-emerald-400 block mb-0.5">🔒 Pujas Secretas (12h)</strong>
-                Nadie ve tu puja hasta que terminen las 12 horas. Gana la puja más alta.
+                <strong className="text-emerald-400 block mb-0.5">🔒 Pujas Secretas (8h)</strong>
+                Mercado auto-renovable cada 8 horas (08:00, 16:00, 00:00). Pujas secretas independientes.
               </div>
               <div className="p-2.5 rounded-xl bg-slate-950/60 border border-emerald-900/40">
                 <strong className="text-amber-400 block mb-0.5">💼 Oferta del Míster (90%)</strong>
-                Al poner a la venta desde tu plantilla, el Míster te hace oferta del 90%. Tú decides si ACEPTAR o RECHAZAR.
+                Al poner a la venta tu jugador, el Míster te ofrece el 90% del valor de mercado.
               </div>
               <div className="p-2.5 rounded-xl bg-slate-950/60 border border-emerald-900/40">
-                <strong className="text-red-400 block mb-0.5">⚡ Clausulazos & Cierre (24h)</strong>
-                Blindaje dura 1 jornada. Los clausulazos se bloquean 24h antes del inicio de la jornada.
+                <strong className="text-red-400 block mb-0.5">⚡ Clausulazos & Instancias</strong>
+                Cada manager tiene su propia cláusula para su jugador. Máximo 7 managers por jugador real.
               </div>
             </div>
           </div>
@@ -467,7 +473,7 @@ export default function MercadoPage() {
                     : "bg-slate-900 text-slate-400 hover:text-white"
                 }`}
               >
-                <ShoppingBag className="w-3.5 h-3.5" /> Mercado 12h ({listings.length})
+                <ShoppingBag className="w-3.5 h-3.5" /> Mercado 8h ({listings.length})
               </button>
               <button
                 onClick={() => setMarketTab("CLAUSULAZO")}
@@ -482,7 +488,7 @@ export default function MercadoPage() {
             </div>
           </div>
 
-          {/* TAB 1: 12-HOUR SECRET BID MARKET */}
+          {/* TAB 1: 8-HOUR SECRET BID MARKET */}
           {marketTab === "BID_MARKET" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {listings.map((listing: any) => {
@@ -551,7 +557,7 @@ export default function MercadoPage() {
                             />
                             <button
                               onClick={() => handlePlaceBid(listing.id, listing.askingPrice)}
-                              disabled={isLoading || (myRosterIds.length >= 6)}
+                              disabled={isLoading || (myRosterIds.length >= 5)}
                               className="py-2 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md shadow-emerald-500/20 disabled:opacity-50 flex-shrink-0 transition-all"
                             >
                               {isLoading ? "Enviando..." : myBid ? "Actualizar Puja" : "Pujar Secreto"}
@@ -589,7 +595,7 @@ export default function MercadoPage() {
                 {rivalPlayers.map((player: any) => {
                   const ownerEntry = player.rosterEntries && player.rosterEntries.length > 0 ? player.rosterEntries[0] : null;
                   const ownerName = ownerEntry?.fantasyTeam?.user?.nickname || ownerEntry?.fantasyTeam?.name;
-                  const buyoutClause = player.buyoutClause || Math.round((player.marketValue * 1.5) * 10) / 10;
+                  const buyoutClause = ownerEntry?.buyoutClause || player.buyoutClause || Math.round((player.marketValue * 1.5) * 10) / 10;
                   const isLoading = loadingId === player.id;
                   const canAffordClause = (fantasyTeam?.budget || 0) >= buyoutClause;
                   const isShielded = currentMd && player.shieldedAtMatchdayNumber === currentMd.number;
@@ -629,14 +635,14 @@ export default function MercadoPage() {
                             <span className="text-sm font-black text-emerald-400">{player.marketValue}M €</span>
                           </div>
                           <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                            <span className="text-[9px] text-amber-400 font-bold uppercase tracking-wider block">Cláusula Rescisión</span>
+                            <span className="text-[9px] text-amber-400 font-bold uppercase tracking-wider block">Cláusula Instancia</span>
                             <span className="text-sm font-black text-amber-300">{buyoutClause}M €</span>
                           </div>
                         </div>
 
                         <button
                           onClick={() => handleClausulazoOrShield(player.id, "CLAUSULAZO")}
-                          disabled={isLoading || !canAffordClause || is24hLockdown || isShielded || (myRosterIds.length >= 6)}
+                          disabled={isLoading || !canAffordClause || is24hLockdown || isShielded || (myRosterIds.length >= 5)}
                           className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all"
                         >
                           <Zap className="w-4 h-4 fill-slate-950" />

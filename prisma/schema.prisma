@@ -49,6 +49,7 @@ model League {
   matchdays          Matchday[]
   transfers          Transfer[]
   marketListings     MarketListing[]
+  marketCycles       MarketCycle[]
   auditLogs          AuditLog[]
   directOffers       DirectOffer[]
 }
@@ -325,32 +326,53 @@ model AuditLog {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model MarketCycle {
+  id             String          @id @default(cuid())
+  leagueId       String
+  cycleNumber    Int             @default(1)
+  startedAt      DateTime        @default(now())
+  endsAt         DateTime
+  status         String          @default("ACTIVE") // ACTIVE, RESOLVED, ERROR
+  errorLog       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  league         League          @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  listings       MarketListing[]
+}
+
 model MarketListing {
-  id               String      @id @default(cuid())
-  leagueId         String
-  realPlayerId     String
-  sellerTeamId     String?     // null if system player, or fantasyTeamId if listed by user
-  askingPrice      Float
-  misterOfferPrice Float?      // 90% of marketValue offered by Míster
-  roundEndsAt      DateTime
-  status           String      @default("ACTIVE") // ACTIVE, OFFER_PENDING, ACCEPTED, REJECTED, RESOLVED
-  createdAt        DateTime    @default(now())
+  id                   String       @id @default(cuid())
+  leagueId             String
+  marketCycleId        String?
+  realPlayerId         String
+  sellerTeamId         String?      // null if system player, or fantasyTeamId if listed by user
+  askingPrice          Float
+  misterOfferPrice     Float?       // 90% of marketValue offered by Míster
+  roundEndsAt          DateTime
+  status               String       @default("ACTIVE") // ACTIVE, OFFER_PENDING, ACCEPTED, REJECTED, RESOLVED
+  processedWinnerTeamId String?
+  resolutionReason     String?
+  createdAt            DateTime     @default(now())
 
   league        League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  marketCycle   MarketCycle? @relation(fields: [marketCycleId], references: [id], onDelete: Cascade)
   realPlayer    RealPlayer   @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
   sellerTeam    FantasyTeam? @relation(fields: [sellerTeamId], references: [id])
   bids          MarketBid[]
 }
 
 model MarketBid {
-  id            String        @id @default(cuid())
-  listingId     String
-  fantasyTeamId String
-  amount        Float
-  createdAt     DateTime      @default(now())
+  id              String        @id @default(cuid())
+  listingId       String
+  fantasyTeamId   String
+  amount          Float
+  status          String        @default("PENDING") // PENDING, WON, OUTBID, REJECTED, CANCELLED
+  rejectionReason String?
+  createdAt       DateTime      @default(now())
 
-  listing       MarketListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  fantasyTeam   FantasyTeam   @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  listing         MarketListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  fantasyTeam     FantasyTeam   @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
 
   @@unique([listingId, fantasyTeamId])
 }
@@ -370,5 +392,6 @@ model DirectOffer {
   sellerTeam      FantasyTeam @relation("SellerDirectOffers", fields: [sellerTeamId], references: [id], onDelete: Cascade)
   realPlayer      RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
 }
+
 
 

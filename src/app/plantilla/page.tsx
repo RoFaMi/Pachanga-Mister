@@ -194,18 +194,16 @@ export default function PlantillaPage() {
   const ala1 = getPlayerBySlot("ALA_1");
   const ala2 = getPlayerBySlot("ALA_2");
   const pivot = getPlayerBySlot("PIVOT");
-  const suplente1 = getPlayerBySlot("SUPLENTE_1");
 
   const isNegativeBudget = (fantasyTeam?.budget || 0) < 0;
   const emptyStartingSlots = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"].filter((s) => !getPlayerBySlot(s)).length;
 
   const slotLabels: Record<string, string> = {
-    POR: "Titular 1",
-    CIERRE: "Titular 2",
-    ALA_1: "Titular 3",
-    ALA_2: "Titular 4",
-    PIVOT: "Titular 5",
-    SUPLENTE_1: "1er Cambio",
+    POR: "Portero (POR)",
+    CIERRE: "Cierre (CIERRE)",
+    ALA_1: "Ala Izquierda (ALA 1)",
+    ALA_2: "Ala Derecha (ALA 2)",
+    PIVOT: "Pívot (PIVOT)",
     UNASSIGNED: "Sin posición",
   };
 
@@ -255,7 +253,7 @@ export default function PlantillaPage() {
               <div className="w-px h-8 bg-emerald-900/40"></div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Plantilla</span>
-                <span className="text-base font-black text-amber-400">{roster.length}/6 Jugadores</span>
+                <span className="text-base font-black text-amber-400">{roster.length}/5 Jugadores</span>
               </div>
             </div>
           </div>
@@ -287,8 +285,8 @@ export default function PlantillaPage() {
             </div>
           )}
 
-          {/* VISUAL 5v5 + 1er CAMBIO FUTSAL PITCH GRAPHIC */}
-          <div className="pitch-gradient rounded-3xl p-6 border border-emerald-600/40 shadow-2xl relative min-h-[480px] flex flex-col justify-between overflow-hidden">
+          {/* VISUAL 5v5 FUTSAL PITCH GRAPHIC */}
+          <div className="pitch-gradient rounded-3xl p-6 border border-emerald-600/40 shadow-2xl relative min-h-[460px] flex flex-col justify-between overflow-hidden">
             {/* Goal lines & Penalty arc visual overlays */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-12 border-b-2 border-l-2 border-r-2 border-white/20 rounded-b-full pointer-events-none"></div>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-12 border-t-2 border-l-2 border-r-2 border-white/20 rounded-t-full pointer-events-none"></div>
@@ -298,9 +296,9 @@ export default function PlantillaPage() {
             <div className="flex justify-center z-10 my-2">
               <PitchSlot
                 player={pivot}
-                slotName="TITULAR 1"
+                slotName="PÍVOT"
                 isCaptain={pivot?.id === captainId}
-                onClick={() => setSelectedSlotModal({ slotKey: "PIVOT", slotTitle: "TITULAR 1" })}
+                onClick={() => setSelectedSlotModal({ slotKey: "PIVOT", slotTitle: "Pívot (PIVOT)" })}
               />
             </div>
 
@@ -308,15 +306,15 @@ export default function PlantillaPage() {
             <div className="flex justify-between px-6 z-10 my-2">
               <PitchSlot
                 player={ala1}
-                slotName="TITULAR 2"
+                slotName="ALA 1"
                 isCaptain={ala1?.id === captainId}
-                onClick={() => setSelectedSlotModal({ slotKey: "ALA_1", slotTitle: "TITULAR 2" })}
+                onClick={() => setSelectedSlotModal({ slotKey: "ALA_1", slotTitle: "Ala Izquierda (ALA_1)" })}
               />
               <PitchSlot
                 player={ala2}
-                slotName="TITULAR 3"
+                slotName="ALA 2"
                 isCaptain={ala2?.id === captainId}
-                onClick={() => setSelectedSlotModal({ slotKey: "ALA_2", slotTitle: "TITULAR 3" })}
+                onClick={() => setSelectedSlotModal({ slotKey: "ALA_2", slotTitle: "Ala Derecha (ALA_2)" })}
               />
             </div>
 
@@ -324,9 +322,9 @@ export default function PlantillaPage() {
             <div className="flex justify-center z-10 my-2">
               <PitchSlot
                 player={cierre}
-                slotName="TITULAR 4"
+                slotName="CIERRE"
                 isCaptain={cierre?.id === captainId}
-                onClick={() => setSelectedSlotModal({ slotKey: "CIERRE", slotTitle: "TITULAR 4" })}
+                onClick={() => setSelectedSlotModal({ slotKey: "CIERRE", slotTitle: "Cierre (CIERRE)" })}
               />
             </div>
 
@@ -334,22 +332,9 @@ export default function PlantillaPage() {
             <div className="flex justify-center z-10 my-2">
               <PitchSlot
                 player={portero}
-                slotName="TITULAR 5"
+                slotName="PORTERO"
                 isCaptain={portero?.id === captainId}
-                onClick={() => setSelectedSlotModal({ slotKey: "POR", slotTitle: "TITULAR 5" })}
-              />
-            </div>
-
-            {/* 6º JUGADOR - 1er CAMBIO */}
-            <div className="mt-4 pt-4 border-t border-emerald-500/30 flex items-center justify-center gap-3 z-10">
-              <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 bg-slate-950/80 px-2.5 py-1 rounded-xl border border-amber-500/40">
-                <Zap className="w-3.5 h-3.5" /> 6º Jugador (1er Cambio - Puntúa)
-              </span>
-              <PitchSlot
-                player={suplente1}
-                slotName="1er CAMBIO"
-                isCaptain={suplente1?.id === captainId}
-                onClick={() => setSelectedSlotModal({ slotKey: "SUPLENTE_1", slotTitle: "1er CAMBIO" })}
+                onClick={() => setSelectedSlotModal({ slotKey: "POR", slotTitle: "Portero (POR)" })}
               />
             </div>
           </div>

@@ -17,13 +17,21 @@ export async function GET(req: Request) {
     if (!leagueId) {
       const firstLeague = await db.league.findFirst();
       if (!firstLeague) {
-        return NextResponse.json({ listings: [], myBids: [], pendingMisterOffers: [] });
+        return NextResponse.json({ listings: [], myBids: [], pendingMisterOffers: [], nextRenewalAt: null });
       }
       leagueId = firstLeague.id;
     }
 
-    // Resolve expired 12h rounds & get current active listings
+    // Resolve expired 8h cycle & get active listings (Fast read)
     const activeListings = await getOrResolveMarketRound(leagueId);
+
+    // Get current active cycle info
+    const activeCycle = await db.marketCycle.findFirst({
+      where: { leagueId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const nextRenewalAt = activeCycle?.endsAt || (activeListings.length > 0 ? activeListings[0].roundEndsAt : null);
 
     // Get my fantasy team
     const fantasyTeam = await db.fantasyTeam.findUnique({
@@ -72,6 +80,8 @@ export async function GET(req: Request) {
       pendingMisterOffers,
       incomingDirectOffers,
       myFantasyTeam: fantasyTeam,
+      nextRenewalAt,
+      cycleNumber: activeCycle?.cycleNumber || 1,
     });
   } catch (error) {
     console.error("GET /api/market error:", error);
