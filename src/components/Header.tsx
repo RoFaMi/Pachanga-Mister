@@ -52,39 +52,18 @@ export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLog
 
   return (
     <header className="sticky top-0 z-30 glass-panel border-b border-emerald-900/40 px-4 py-3 flex items-center justify-between gap-4">
-      {/* Mobile Brand Title */}
-      <div className="flex md:hidden items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-sm">
+      {/* Brand Title & Active League Badge */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-sm shadow-md">
           MP
         </div>
-        <span className="font-extrabold text-white text-base tracking-wide">
-          MÍSTER <span className="text-emerald-400">PACHANGA</span>
-        </span>
-      </div>
-
-      {/* League Selector Dropdown (Visible on both Mobile and Desktop) */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-800/50">
-          <Trophy className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-          <select
-            value={activeLeague?.id || ""}
-            onChange={(e) => {
-              if (e.target.value && onSelectLeague) {
-                onSelectLeague(e.target.value);
-              }
-            }}
-            className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer max-w-[120px] sm:max-w-[200px] truncate"
-          >
-            {leagues.length > 0 ? (
-              leagues.map((l) => (
-                <option key={l.id} value={l.id} className="bg-slate-900 text-white">
-                  {l.name}
-                </option>
-              ))
-            ) : (
-              <option value="">{activeLeague?.name || "Liga Pachanga 5v5"}</option>
-            )}
-          </select>
+        <div>
+          <span className="font-extrabold text-white text-base tracking-wide flex items-center gap-1.5">
+            MÍSTER <span className="text-emerald-400">PACHANGA</span>
+          </span>
+          <p className="text-[10px] text-amber-400 font-bold flex items-center gap-1">
+            <Trophy className="w-3 h-3 text-amber-400 inline" /> {activeLeague?.name || "Liga Pachanga 5v5"}
+          </p>
         </div>
       </div>
 

@@ -242,7 +242,7 @@ export default function DashboardPage() {
                 <Users className="w-5 h-5" />
               </div>
               <span className="text-xs font-extrabold text-white">Mi Plantilla 5v5</span>
-              <span className="text-[10px] text-emerald-400 font-semibold">{fantasyTeam?.roster?.length || 0}/6 Jugadores</span>
+              <span className="text-[10px] text-emerald-400 font-semibold">{fantasyTeam?.roster?.length || 0}/5 Jugadores</span>
             </Link>
 
             <Link

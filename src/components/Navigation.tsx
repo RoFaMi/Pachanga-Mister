@@ -44,18 +44,18 @@ export function Navigation({ user, activeLeague, onLogout }: NavigationProps) {
   const activeUser = user || localUser;
 
   const navItems = [
-    { href: "/", label: "Inicio", icon: LayoutDashboard },
-    { href: "/plantilla", label: "Plantilla", icon: Users },
-    { href: "/pachanga", label: "Modo Pachanga", icon: Zap, highlight: true },
-    { href: "/mercado", label: "Mercado", icon: ShoppingBag },
-    { href: "/clasificacion", label: "Clasificación", icon: Trophy },
-    { href: "/valoracion", label: "Valoraciones", icon: Star },
+    { href: "/", label: "Inicio", mobileLabel: "Inicio", icon: LayoutDashboard },
+    { href: "/plantilla", label: "Plantilla", mobileLabel: "Plantilla", icon: Users },
+    { href: "/pachanga", label: "Modo Pachanga", mobileLabel: "Pachanga", icon: Zap, highlight: true },
+    { href: "/mercado", label: "Mercado", mobileLabel: "Mercado", icon: ShoppingBag },
+    { href: "/clasificacion", label: "Clasificación", mobileLabel: "Tabla", icon: Trophy },
+    { href: "/valoracion", label: "Valoraciones", mobileLabel: "Votar", icon: Star },
   ];
 
   const isAdmin = activeUser?.role === "ADMIN" || activeLeague?.ownerId === activeUser?.id;
 
   if (isAdmin) {
-    navItems.push({ href: "/admin", label: "Admin", icon: ShieldAlert, highlight: false });
+    navItems.push({ href: "/admin", label: "Admin", mobileLabel: "Admin", icon: ShieldAlert, highlight: false });
   }
 
   return (
@@ -163,7 +163,7 @@ export function Navigation({ user, activeLeague, onLogout }: NavigationProps) {
       </aside>
 
       {/* Mobile Bottom Tab Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg glass-panel bg-[#0b1310]/95 backdrop-blur-md border-t border-emerald-900/50 z-50 px-3 py-1.5 flex items-center justify-around shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full glass-panel bg-[#0b1310]/95 backdrop-blur-md border-t border-emerald-900/50 z-50 px-1 py-1 flex items-center justify-around shadow-2xl">
         {navItems.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -171,12 +171,12 @@ export function Navigation({ user, activeLeague, onLogout }: NavigationProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+              className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
                 isActive ? "text-emerald-400 font-bold" : item.highlight ? "text-amber-400 font-bold" : "text-slate-400"
               }`}
             >
               <div
-                className={`p-1.5 rounded-lg ${
+                className={`p-1 rounded-lg ${
                   isActive
                     ? "bg-emerald-500/20 border border-emerald-500/40"
                     : item.highlight
@@ -184,9 +184,9 @@ export function Navigation({ user, activeLeague, onLogout }: NavigationProps) {
                     : ""
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <span className="text-[10px] mt-0.5">{item.label}</span>
+              <span className="text-[9px] sm:text-[10px] mt-0.5 truncate max-w-full text-center">{item.mobileLabel}</span>
             </Link>
           );
         })}
