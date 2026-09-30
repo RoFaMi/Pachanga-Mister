@@ -20,6 +20,7 @@ export default function MercadoPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   
+  const [leagues, setLeagues] = useState<any[]>([]);
   const [rivalRosterEntries, setRivalRosterEntries] = useState<any[]>([]);
   const [nextRenewalAt, setNextRenewalAt] = useState<string | null>(null);
   const [cycleNumber, setCycleNumber] = useState<number>(1);
@@ -52,10 +53,14 @@ export default function MercadoPage() {
     return () => clearInterval(interval);
   }, [nextRenewalAt]);
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = async (targetLeagueId?: string) => {
     try {
-      const [dataUser, dataMarket] = await Promise.all([
+      const savedLeagueId = targetLeagueId || (typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") || "" : "");
+      const marketUrl = savedLeagueId ? `/api/market?leagueId=${savedLeagueId}` : "/api/market";
+
+      const [dataUser, dataLeagues, dataMarket] = await Promise.all([
         safeFetchJson<{ user: any }>("/api/auth/me"),
+        safeFetchJson<{ leagues: any[] }>("/api/leagues"),
         safeFetchJson<{
           league: any;
           myFantasyTeam: any;
@@ -66,13 +71,19 @@ export default function MercadoPage() {
           rivalRosterEntries: any[];
           nextRenewalAt?: string;
           cycleNumber?: number;
-        }>("/api/market"),
+        }>(marketUrl),
       ]);
 
       if (dataUser?.user) setUser(dataUser.user);
+      if (dataLeagues?.leagues) setLeagues(dataLeagues.leagues);
 
       if (dataMarket) {
-        if (dataMarket.league) setLeague(dataMarket.league);
+        if (dataMarket.league) {
+          setLeague(dataMarket.league);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("pachanga_active_league_id", dataMarket.league.id);
+          }
+        }
         if (dataMarket.myFantasyTeam) setFantasyTeam(dataMarket.myFantasyTeam);
         if (dataMarket.listings) setListings(dataMarket.listings);
         if (dataMarket.pendingMisterOffers) setPendingMisterOffers(dataMarket.pendingMisterOffers);
@@ -93,6 +104,13 @@ export default function MercadoPage() {
     } catch (e) {
       console.error("Error loading transfer market data:", e);
     }
+  };
+
+  const handleSelectLeague = (selectedLeagueId: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("pachanga_active_league_id", selectedLeagueId);
+    }
+    fetchInitialData(selectedLeagueId);
   };
 
   const handleSwitchUser = async (email: string) => {
@@ -293,7 +311,13 @@ export default function MercadoPage() {
       <Navigation user={user} activeLeague={league} />
 
       <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
-        <Header user={user} activeLeague={league} onSwitchUser={handleSwitchUser} />
+        <Header
+          user={user}
+          leagues={leagues}
+          activeLeague={league}
+          onSelectLeague={handleSelectLeague}
+          onSwitchUser={handleSwitchUser}
+        />
 
         <main className="p-4 space-y-6 flex-1">
           {/* Header Banner */}

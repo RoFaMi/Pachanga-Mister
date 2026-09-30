@@ -62,14 +62,18 @@ export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLog
         </span>
       </div>
 
-      {/* League Selector Dropdown */}
-      <div className="hidden md:flex items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-800/50">
-          <Trophy className="w-4 h-4 text-amber-400" />
+      {/* League Selector Dropdown (Visible on both Mobile and Desktop) */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-800/50">
+          <Trophy className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
           <select
             value={activeLeague?.id || ""}
-            onChange={(e) => onSelectLeague && onSelectLeague(e.target.value)}
-            className="bg-transparent text-white font-bold text-sm focus:outline-none cursor-pointer"
+            onChange={(e) => {
+              if (e.target.value && onSelectLeague) {
+                onSelectLeague(e.target.value);
+              }
+            }}
+            className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer max-w-[120px] sm:max-w-[200px] truncate"
           >
             {leagues.length > 0 ? (
               leagues.map((l) => (
@@ -78,7 +82,7 @@ export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLog
                 </option>
               ))
             ) : (
-              <option value="">Liga Pachanga 5v5</option>
+              <option value="">{activeLeague?.name || "Liga Pachanga 5v5"}</option>
             )}
           </select>
         </div>
