@@ -5,7 +5,7 @@ import { Users, Crown, Shield, Zap, AlertCircle, ShoppingBag, X, UserMinus, Tag 
 import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
-import { safeFetchJson } from "@/lib/api";
+import { safeFetchJson, authFetch } from "@/lib/api";
 
 export default function PlantillaPage() {
   const [user, setUser] = useState<any>(null);
@@ -72,7 +72,7 @@ export default function PlantillaPage() {
 
     try {
       const currentMd = league.matchdays[0];
-      const res = await fetch("/api/fantasy/captain", {
+      const res = await authFetch("/api/fantasy/captain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -97,7 +97,7 @@ export default function PlantillaPage() {
     setSavingSlot(true);
 
     try {
-      const res = await fetch("/api/fantasy/roster", {
+      const res = await authFetch("/api/fantasy/roster", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -126,7 +126,7 @@ export default function PlantillaPage() {
     setSavingSlot(true);
 
     try {
-      const res = await fetch("/api/fantasy/roster", {
+      const res = await authFetch("/api/fantasy/roster", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -160,7 +160,7 @@ export default function PlantillaPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/market/transfers", {
+      const res = await authFetch("/api/market/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

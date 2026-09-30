@@ -304,9 +304,14 @@ export async function createNewMarketCycle(leagueId: string) {
   }
 
   // 2. Fetch all real players in the league
-  const allLeaguePlayers = await db.realPlayer.findMany({
+  let allLeaguePlayers = await db.realPlayer.findMany({
     where: { leagueId },
   });
+
+  // Fallback: If no real players linked specifically to this leagueId, fetch all available real players in DB
+  if (allLeaguePlayers.length === 0) {
+    allLeaguePlayers = await db.realPlayer.findMany();
+  }
 
   // 3. Filter players that have < 7 owners (MAX_OWNERS_PER_PLAYER = 7)
   const eligiblePlayers = allLeaguePlayers.filter((p) => {

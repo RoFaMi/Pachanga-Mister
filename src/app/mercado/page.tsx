@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { ShoppingBag, Zap, Shield, AlertCircle, Clock, Tag, X, CheckCircle, XCircle, Send } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
-import { safeFetchJson } from "@/lib/api";
+import { safeFetchJson, authFetch } from "@/lib/api";
 
 export default function MercadoPage() {
   const [user, setUser] = useState<any>(null);
@@ -146,7 +146,7 @@ export default function MercadoPage() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/market/transfers", {
+      const res = await authFetch("/api/market/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -178,7 +178,7 @@ export default function MercadoPage() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/market/transfers", {
+      const res = await authFetch("/api/market/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -209,7 +209,7 @@ export default function MercadoPage() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/market/transfers", {
+      const res = await authFetch("/api/market/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -238,7 +238,7 @@ export default function MercadoPage() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/market/direct-offers", {
+      const res = await authFetch("/api/market/direct-offers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -268,7 +268,7 @@ export default function MercadoPage() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/market/transfers", {
+      const res = await authFetch("/api/market/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -15,7 +15,15 @@ export async function GET(req: Request) {
 
     let leagueId = leagueIdParam;
 
-    // If no leagueId parameter provided, find user's active fantasy team league
+    // Verify if provided leagueId actually exists in DB
+    if (leagueId) {
+      const existingLeague = await db.league.findUnique({ where: { id: leagueId }, select: { id: true } });
+      if (!existingLeague) {
+        leagueId = null;
+      }
+    }
+
+    // If no valid leagueId provided, find user's active fantasy team league
     if (!leagueId) {
       const userTeam = await db.fantasyTeam.findFirst({
         where: { userId: user.id },
