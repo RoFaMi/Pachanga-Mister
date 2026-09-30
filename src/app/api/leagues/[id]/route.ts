@@ -62,7 +62,36 @@ export async function GET(req: any, context: any) {
     }
 
     const myMembership = user ? league.members.find((m: any) => m.userId === user.id) : null;
-    const myFantasyTeam = user ? league.fantasyTeams.find((ft: any) => ft.userId === user.id) : null;
+    let myFantasyTeam = user ? league.fantasyTeams.find((ft: any) => ft.userId === user.id) : null;
+
+    // Auto-create FantasyTeam for logged-in user if missing
+    if (user && !myFantasyTeam) {
+      try {
+        myFantasyTeam = await db.fantasyTeam.create({
+          data: {
+            leagueId: league.id,
+            userId: user.id,
+            name: `Equipo de ${user.nickname || user.fullName || "Míster"}`,
+            badgeUrl: user.avatarUrl || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=150&auto=format&fit=crop&q=80",
+            budget: league.initialBudget || 30.0,
+          },
+          include: {
+            user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } },
+            roster: { include: { realPlayer: true } },
+            captains: true,
+          },
+        });
+
+        // Ensure membership record
+        if (!myMembership) {
+          await db.leagueMember.create({
+            data: { leagueId: league.id, userId: user.id, role: "PARTICIPANT" },
+          }).catch(() => null);
+        }
+      } catch (e) {
+        console.error("Auto-create fantasy team error:", e);
+      }
+    }
 
     return NextResponse.json({
       league,

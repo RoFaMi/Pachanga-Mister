@@ -9,16 +9,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { leagueId, name, action, matchdayId, teamAPlayerIds, teamBPlayerIds, teamCPlayerIds } = await req.json();
+    const { leagueId, name, action, matchdayId, date, status } = await req.json();
 
     const membership = await db.leagueMember.findUnique({
       where: { leagueId_userId: { leagueId, userId: user.id } },
     });
 
-    if (!membership || membership.role !== "ADMIN") {
+    const league = await db.league.findUnique({ where: { id: leagueId }, select: { ownerId: true } });
+    const isOwnerOrAdmin = (membership && membership.role === "ADMIN") || (league && league.ownerId === user.id);
+
+    if (!isOwnerOrAdmin) {
       return NextResponse.json({ error: "Permiso denegado. Se requieren derechos de administrador." }, { status: 403 });
     }
 
+    // ACTION: CREATE MATCHDAY
     if (action === "CREATE_MATCHDAY") {
       const currentCount = await db.matchday.count({ where: { leagueId } });
       const newMatchday = await db.matchday.create({
@@ -27,7 +31,7 @@ export async function POST(req: Request) {
           number: currentCount + 1,
           name: name || `Jornada ${currentCount + 1}`,
           status: "SCHEDULED",
-          date: new Date(),
+          date: date ? new Date(date) : new Date(),
         },
       });
 
@@ -45,6 +49,56 @@ export async function POST(req: Request) {
       return NextResponse.json({ matchday: newMatchday, teams: [tA, tB, tC], message: "Jornada creada con éxito" });
     }
 
+    // ACTION: EDIT / UPDATE MATCHDAY
+    if (action === "EDIT_MATCHDAY" || action === "UPDATE_MATCHDAY") {
+      if (!matchdayId) {
+        return NextResponse.json({ error: "ID de jornada requerido" }, { status: 400 });
+      }
+
+      const updateData: any = {};
+      if (name && name.trim()) updateData.name = name.trim();
+      if (date) updateData.date = new Date(date);
+      if (status && ["SCHEDULED", "LIVE", "COMPLETED"].includes(status)) updateData.status = status;
+
+      const updated = await db.matchday.update({
+        where: { id: matchdayId },
+        data: updateData,
+      });
+
+      return NextResponse.json({ matchday: updated, message: `✅ Jornada '${updated.name}' actualizada con éxito.` });
+    }
+
+    // ACTION: DELETE MATCHDAY
+    if (action === "DELETE_MATCHDAY") {
+      if (!matchdayId) {
+        return NextResponse.json({ error: "ID de jornada requerido" }, { status: 400 });
+      }
+
+      const targetMd = await db.matchday.findUnique({ where: { id: matchdayId } });
+      if (!targetMd) {
+        return NextResponse.json({ error: "Jornada no encontrada" }, { status: 404 });
+      }
+
+      await db.$transaction(async (tx) => {
+        // Delete all matches, lineups, events, ratings, matchTeams linked to this matchday
+        const matches = await tx.match.findMany({ where: { matchdayId } });
+        const matchIds = matches.map((m) => m.id);
+
+        if (matchIds.length > 0) {
+          await tx.matchLineup.deleteMany({ where: { matchId: { in: matchIds } } });
+          await tx.matchEvent.deleteMany({ where: { matchId: { in: matchIds } } });
+          await tx.matchRating.deleteMany({ where: { matchId: { in: matchIds } } });
+          await tx.match.deleteMany({ where: { matchdayId } });
+        }
+
+        await tx.matchTeam.deleteMany({ where: { matchdayId } });
+        await tx.matchday.delete({ where: { id: matchdayId } });
+      });
+
+      return NextResponse.json({ message: `🗑️ Jornada '${targetMd.name}' eliminada correctamente.` });
+    }
+
+    // ACTION: FINISH MATCHDAY
     if (action === "FINISH_MATCHDAY") {
       if (!matchdayId) {
         return NextResponse.json({ error: "ID de jornada requerido" }, { status: 400 });
@@ -58,9 +112,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Jornada finalizada y clasificaciones cerradas" });
     }
 
+    // ACTION: REOPEN MATCHDAY
+    if (action === "REOPEN_MATCHDAY") {
+      if (!matchdayId) {
+        return NextResponse.json({ error: "ID de jornada requerido" }, { status: 400 });
+      }
+
+      await db.matchday.update({
+        where: { id: matchdayId },
+        data: { status: "SCHEDULED" },
+      });
+
+      return NextResponse.json({ message: "Jornada reabierta para edición y partidos" });
+    }
+
     return NextResponse.json({ error: "Acción no válida" }, { status: 400 });
   } catch (error) {
     console.error("Admin Matchday Error:", error);
-    return NextResponse.json({ error: "Error de administración" }, { status: 500 });
+    return NextResponse.json({ error: "Error al gestionar la jornada" }, { status: 500 });
   }
 }

@@ -27,6 +27,11 @@ export default function AdminPage() {
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
   const [resettingStats, setResettingStats] = useState(false);
 
+  // Matchday editing state
+  const [editingMatchday, setEditingMatchday] = useState<any | null>(null);
+  const [editMatchdayName, setEditMatchdayName] = useState("");
+  const [editMatchdayStatus, setEditMatchdayStatus] = useState("SCHEDULED");
+
   const handleResetUserPassword = async (userId: string, nickname: string) => {
     const newPassword = prompt(`Introduce la nueva contraseña para el mánager '${nickname}':`);
     if (!newPassword) return;
@@ -158,7 +163,7 @@ export default function AdminPage() {
   const handleCreateMatchday = async () => {
     if (!league) return;
     try {
-      const res = await fetch("/api/admin/matchday", {
+      const res = await authFetch("/api/admin/matchday", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -171,10 +176,73 @@ export default function AdminPage() {
       const data = await res.json();
       if (res.ok) {
         setMessage(data.message);
+        setMatchdayName("");
         fetchInitialData();
       }
     } catch (e) {
       console.error("Create matchday error:", e);
+    }
+  };
+
+  const handleDeleteMatchday = async (matchdayId: string, name: string) => {
+    if (!league) return;
+    if (!confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente '${name}' y todos sus partidos/estadísticas asociadas?`)) {
+      return;
+    }
+
+    setMessage(null);
+    try {
+      const res = await authFetch("/api/admin/matchday", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leagueId: league.id,
+          matchdayId,
+          action: "DELETE_MATCHDAY",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(data.message);
+        fetchInitialData();
+      } else {
+        setMessage(data.error || "Error al eliminar la jornada");
+      }
+    } catch (e) {
+      console.error("Delete matchday error:", e);
+      setMessage("Error al eliminar la jornada");
+    }
+  };
+
+  const handleEditMatchday = async (matchdayId: string) => {
+    if (!league || !editMatchdayName.trim()) return;
+
+    setMessage(null);
+    try {
+      const res = await authFetch("/api/admin/matchday", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leagueId: league.id,
+          matchdayId,
+          name: editMatchdayName.trim(),
+          status: editMatchdayStatus,
+          action: "EDIT_MATCHDAY",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(data.message);
+        setEditingMatchday(null);
+        fetchInitialData();
+      } else {
+        setMessage(data.error || "Error al editar la jornada");
+      }
+    } catch (e) {
+      console.error("Edit matchday error:", e);
+      setMessage("Error al editar la jornada");
     }
   };
 
@@ -547,7 +615,102 @@ export default function AdminPage() {
                     >
                       CREAR JORNADA Y EQUIPOS A/B/C
                     </button>
-                  </div>
+
+                    {/* Existing Matchdays List with Edit & Delete Controls */}
+                    {league?.matchdays && league.matchdays.length > 0 && (
+                      <div className="pt-4 border-t border-emerald-900/40 space-y-3">
+                        <label className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
+                          📅 Jornadas de la Liga ({league.matchdays.length})
+                        </label>
+
+                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                          {league.matchdays.map((md: any) => {
+                            const isEditingThis = editingMatchday?.id === md.id;
+
+                            return (
+                              <div key={md.id} className="p-3 rounded-2xl bg-slate-900/80 border border-emerald-900/40 space-y-2">
+                                {!isEditingThis ? (
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div>
+                                      <span className="text-xs font-black text-white flex items-center gap-2">
+                                        #{md.number} - {md.name}
+                                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${
+                                          md.status === "COMPLETED"
+                                            ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                            : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                        }`}>
+                                          {md.status === "COMPLETED" ? "FINALIZADA" : "PROGRAMADA"}
+                                        </span>
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingMatchday(md);
+                                          setEditMatchdayName(md.name);
+                                          setEditMatchdayStatus(md.status);
+                                        }}
+                                        className="py-1 px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition-all"
+                                      >
+                                        Editar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteMatchday(md.id, md.name)}
+                                        className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[11px] font-bold transition-all"
+                                        title="Eliminar jornada"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* Inline Edit Matchday Form */
+                                  <div className="space-y-2 p-2 rounded-xl bg-slate-950/90 border border-amber-500/40">
+                                    <span className="text-[10px] font-bold text-amber-400 uppercase">Editando Jornada #{md.number}</span>
+                                    <input
+                                      type="text"
+                                      value={editMatchdayName}
+                                      onChange={(e) => setEditMatchdayName(e.target.value)}
+                                      className="w-full bg-slate-900 border border-emerald-800/60 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                                    />
+                                    <div className="flex items-center justify-between gap-2">
+                                      <select
+                                        value={editMatchdayStatus}
+                                        onChange={(e) => setEditMatchdayStatus(e.target.value)}
+                                        className="bg-slate-900 border border-emerald-800/60 rounded-xl px-2 py-1 text-xs text-white focus:outline-none"
+                                      >
+                                        <option value="SCHEDULED">PROGRAMADA</option>
+                                        <option value="COMPLETED">FINALIZADA</option>
+                                      </select>
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleEditMatchday(md.id)}
+                                          className="py-1 px-3 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs"
+                                        >
+                                          Guardar
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingMatchday(null)}
+                                          className="py-1 px-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs"
+                                        >
+                                          Cancelar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                           })}
+                         </div>
+                       </div>
+                     )}
+                   </div>
 
                   {/* Real Players List Summary */}
                   <div className="glass-panel p-5 rounded-3xl space-y-3">

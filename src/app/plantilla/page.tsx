@@ -26,6 +26,8 @@ export default function PlantillaPage() {
 
   const fetchInitialData = async () => {
     try {
+      const activeLeagueId = typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") || "" : "";
+
       const [dataUser, dataLeagues] = await Promise.all([
         safeFetchJson<{ user: any }>("/api/auth/me"),
         safeFetchJson<{ leagues: any[] }>("/api/leagues"),
@@ -34,8 +36,12 @@ export default function PlantillaPage() {
       if (dataUser?.user) setUser(dataUser.user);
 
       if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
-        const demoLeague = dataLeagues.leagues[0];
-        const dataDetail = await safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${demoLeague.id}`);
+        const targetLeague = dataLeagues.leagues.find((l: any) => l.id === activeLeagueId) || dataLeagues.leagues[0];
+        if (targetLeague && typeof window !== "undefined") {
+          localStorage.setItem("pachanga_active_league_id", targetLeague.id);
+        }
+
+        const dataDetail = await safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${targetLeague.id}`);
         if (dataDetail?.league) setLeague(dataDetail.league);
         if (dataDetail?.myFantasyTeam) {
           setFantasyTeam(dataDetail.myFantasyTeam);
@@ -226,18 +232,44 @@ export default function PlantillaPage() {
         <Header user={user} activeLeague={league} onSwitchUser={handleSwitchUser} />
 
         <main className="p-4 space-y-6 flex-1">
+          {/* Unauthenticated / Guest Alert Banner */}
+          {!user && (
+            <div className="p-4 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-200 text-xs font-bold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 animate-pulse" />
+                <div>
+                  <p className="text-sm font-black text-amber-300 uppercase tracking-wider">⚠️ MODO VISITANTE EN ESTE NAVEGADOR</p>
+                  <p className="text-[11px] font-medium text-slate-200">
+                    No has iniciado sesión en este dispositivo. Para ver tu mánager real, plantilla y presupuesto, inicia sesión con tu usuario.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/auth/login"
+                className="py-2 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md transition-transform flex-shrink-0"
+              >
+                INICIAR SESIÓN
+              </Link>
+            </div>
+          )}
+
           {/* Header Banner */}
           <div className="glass-panel-glow p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <img
-                src={fantasyTeam?.badgeUrl || "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=150&auto=format&fit=crop&q=80"}
-                alt="Badge"
-                className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-500/40"
+                src={fantasyTeam?.badgeUrl || user?.avatarUrl || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=150&auto=format&fit=crop&q=80"}
+                alt={user?.nickname || "Badge"}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=150&auto=format&fit=crop&q=80";
+                }}
+                className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-md"
               />
               <div>
-                <h1 className="text-xl font-extrabold text-white">{fantasyTeam?.name || "Mi Equipo Fantasy"}</h1>
+                <h1 className="text-xl font-extrabold text-white">
+                  {fantasyTeam?.name || (user?.nickname ? `Equipo de ${user.nickname}` : "Mi Equipo Fantasy")}
+                </h1>
                 <p className="text-xs text-emerald-400 font-semibold">
-                  Puntos Totales: <span className="text-amber-400 text-sm font-black">{fantasyTeam?.totalPoints || 0} pts</span>
+                  Puntos Totales: <span className="text-amber-400 text-sm font-black">{fantasyTeam?.totalPoints ?? 0} pts</span>
                 </p>
               </div>
             </div>
@@ -247,7 +279,7 @@ export default function PlantillaPage() {
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Presupuesto</span>
                 <span className={`text-base font-black ${isNegativeBudget ? "text-red-400" : "text-emerald-400"}`}>
-                  {fantasyTeam?.budget?.toFixed(1) || 30.0}M €
+                  {fantasyTeam?.budget !== undefined ? fantasyTeam.budget.toFixed(1) : "30.0"}M €
                 </span>
               </div>
               <div className="w-px h-8 bg-emerald-900/40"></div>
