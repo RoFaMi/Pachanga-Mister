@@ -14,72 +14,119 @@ export async function GET(req: Request) {
     const leagueIdParam = searchParams.get("leagueId");
 
     let leagueId = leagueIdParam;
+
+    // If no leagueId parameter provided, find user's active fantasy team league
     if (!leagueId) {
-      const firstLeague = await db.league.findFirst();
-      if (!firstLeague) {
-        return NextResponse.json({ listings: [], myBids: [], pendingMisterOffers: [], nextRenewalAt: null });
+      const userTeam = await db.fantasyTeam.findFirst({
+        where: { userId: user.id },
+        select: { leagueId: true },
+      });
+
+      if (userTeam) {
+        leagueId = userTeam.leagueId;
+      } else {
+        const firstLeague = await db.league.findFirst({ select: { id: true } });
+        if (!firstLeague) {
+          return NextResponse.json({
+            league: null,
+            myFantasyTeam: null,
+            listings: [],
+            myBids: [],
+            pendingMisterOffers: [],
+            incomingDirectOffers: [],
+            rivalRosterEntries: [],
+            nextRenewalAt: null,
+            cycleNumber: 1,
+          });
+        }
+        leagueId = firstLeague.id;
       }
-      leagueId = firstLeague.id;
     }
 
-    // Resolve expired 8h cycle & get active listings (Fast read)
-    const activeListings = await getOrResolveMarketRound(leagueId);
-
-    // Get current active cycle info
-    const activeCycle = await db.marketCycle.findFirst({
-      where: { leagueId, status: "ACTIVE" },
-      orderBy: { createdAt: "desc" },
-    });
+    // Run parallel data resolution
+    const [activeListings, activeCycle, leagueData, fantasyTeam, rivalRosterEntries] = await Promise.all([
+      getOrResolveMarketRound(leagueId),
+      db.marketCycle.findFirst({
+        where: { leagueId, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.league.findUnique({
+        where: { id: leagueId },
+        include: {
+          matchdays: {
+            where: { status: "SCHEDULED" },
+            orderBy: { number: "asc" },
+            take: 1,
+          },
+        },
+      }),
+      db.fantasyTeam.findUnique({
+        where: { leagueId_userId: { leagueId, userId: user.id } },
+        include: { roster: true },
+      }),
+      db.fantasyRoster.findMany({
+        where: {
+          fantasyTeam: {
+            leagueId,
+            userId: { not: user.id },
+          },
+        },
+        include: {
+          realPlayer: true,
+          fantasyTeam: { include: { user: true } },
+        },
+      }),
+    ]);
 
     const nextRenewalAt = activeCycle?.endsAt || (activeListings.length > 0 ? activeListings[0].roundEndsAt : null);
-
-    // Get my fantasy team
-    const fantasyTeam = await db.fantasyTeam.findUnique({
-      where: { leagueId_userId: { leagueId, userId: user.id } },
-      include: { roster: true },
-    });
 
     let myBids: any[] = [];
     let pendingMisterOffers: any[] = [];
     let incomingDirectOffers: any[] = [];
 
     if (fantasyTeam) {
-      myBids = await db.marketBid.findMany({
-        where: {
-          fantasyTeamId: fantasyTeam.id,
-          listingId: { in: activeListings.map((l) => l.id) },
-        },
-      });
+      const activeListingIds = activeListings.map((l) => l.id);
 
-      pendingMisterOffers = await db.marketListing.findMany({
-        where: {
-          leagueId,
-          sellerTeamId: fantasyTeam.id,
-          status: { in: ["ACTIVE", "OFFER_PENDING"] },
-        },
-        include: {
-          realPlayer: true,
-        },
-      });
+      const [bids, misterOffers, directOffers] = await Promise.all([
+        db.marketBid.findMany({
+          where: {
+            fantasyTeamId: fantasyTeam.id,
+            listingId: { in: activeListingIds },
+          },
+        }),
+        db.marketListing.findMany({
+          where: {
+            leagueId,
+            sellerTeamId: fantasyTeam.id,
+            status: { in: ["ACTIVE", "OFFER_PENDING"] },
+          },
+          include: { realPlayer: true },
+        }),
+        db.directOffer.findMany({
+          where: {
+            sellerTeamId: fantasyTeam.id,
+            status: "PENDING",
+          },
+          include: {
+            buyerTeam: { include: { user: true } },
+            realPlayer: true,
+          },
+        }),
+      ]);
 
-      incomingDirectOffers = await db.directOffer.findMany({
-        where: {
-          sellerTeamId: fantasyTeam.id,
-          status: "PENDING",
-        },
-        include: {
-          buyerTeam: { include: { user: true } },
-          realPlayer: true,
-        },
-      });
+      myBids = bids;
+      pendingMisterOffers = misterOffers;
+      incomingDirectOffers = directOffers;
     }
 
     return NextResponse.json({
+      league: leagueData,
+      myFantasyTeam: fantasyTeam,
       listings: activeListings,
       myBids,
       pendingMisterOffers,
       incomingDirectOffers,
-      myFantasyTeam: fantasyTeam,
+      rivalRosterEntries,
       nextRenewalAt,
       cycleNumber: activeCycle?.cycleNumber || 1,
     });

@@ -20,7 +20,7 @@ export default function MercadoPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   
-  // Countdown timer state for 8h market round
+  const [rivalRosterEntries, setRivalRosterEntries] = useState<any[]>([]);
   const [nextRenewalAt, setNextRenewalAt] = useState<string | null>(null);
   const [cycleNumber, setCycleNumber] = useState<number>(1);
   const [timeLeftStr, setTimeLeftStr] = useState<string>("");
@@ -54,37 +54,34 @@ export default function MercadoPage() {
 
   const fetchInitialData = async () => {
     try {
-      const [dataUser, dataLeagues] = await Promise.all([
+      const [dataUser, dataMarket] = await Promise.all([
         safeFetchJson<{ user: any }>("/api/auth/me"),
-        safeFetchJson<{ leagues: any[] }>("/api/leagues"),
+        safeFetchJson<{
+          league: any;
+          myFantasyTeam: any;
+          listings: any[];
+          myBids: any[];
+          pendingMisterOffers: any[];
+          incomingDirectOffers: any[];
+          rivalRosterEntries: any[];
+          nextRenewalAt?: string;
+          cycleNumber?: number;
+        }>("/api/market"),
       ]);
 
       if (dataUser?.user) setUser(dataUser.user);
 
-      if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
-        const demoLeague = dataLeagues.leagues[0];
+      if (dataMarket) {
+        if (dataMarket.league) setLeague(dataMarket.league);
+        if (dataMarket.myFantasyTeam) setFantasyTeam(dataMarket.myFantasyTeam);
+        if (dataMarket.listings) setListings(dataMarket.listings);
+        if (dataMarket.pendingMisterOffers) setPendingMisterOffers(dataMarket.pendingMisterOffers);
+        if (dataMarket.incomingDirectOffers) setIncomingDirectOffers(dataMarket.incomingDirectOffers);
+        if (dataMarket.rivalRosterEntries) setRivalRosterEntries(dataMarket.rivalRosterEntries);
+        if (dataMarket.nextRenewalAt) setNextRenewalAt(dataMarket.nextRenewalAt);
+        if (dataMarket.cycleNumber) setCycleNumber(dataMarket.cycleNumber);
 
-        const [dataDetail, dataMarket] = await Promise.all([
-          safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${demoLeague.id}`),
-          safeFetchJson<{
-            listings: any[];
-            myBids: any[];
-            pendingMisterOffers: any[];
-            incomingDirectOffers: any[];
-            nextRenewalAt?: string;
-            cycleNumber?: number;
-          }>(`/api/market?leagueId=${demoLeague.id}`),
-        ]);
-
-        if (dataDetail?.league) setLeague(dataDetail.league);
-        if (dataDetail?.myFantasyTeam) setFantasyTeam(dataDetail.myFantasyTeam);
-
-        if (dataMarket?.listings) setListings(dataMarket.listings);
-        if (dataMarket?.pendingMisterOffers) setPendingMisterOffers(dataMarket.pendingMisterOffers);
-        if (dataMarket?.incomingDirectOffers) setIncomingDirectOffers(dataMarket.incomingDirectOffers);
-        if (dataMarket?.nextRenewalAt) setNextRenewalAt(dataMarket.nextRenewalAt);
-        if (dataMarket?.cycleNumber) setCycleNumber(dataMarket.cycleNumber);
-        if (dataMarket?.myBids) {
+        if (dataMarket.myBids) {
           setMyBids(dataMarket.myBids);
           const prefill: Record<string, string> = {};
           for (const b of dataMarket.myBids) {
@@ -632,16 +629,15 @@ export default function MercadoPage() {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {rivalPlayers.map((player: any) => {
-                  const ownerEntry = player.rosterEntries && player.rosterEntries.length > 0 ? player.rosterEntries[0] : null;
-                  const ownerName = ownerEntry?.fantasyTeam?.user?.nickname || ownerEntry?.fantasyTeam?.name;
-                  const buyoutClause = ownerEntry?.buyoutClause || player.buyoutClause || Math.round((player.marketValue * 1.5) * 10) / 10;
+                {rivalRosterEntries.map((entry: any) => {
+                  const player = entry.realPlayer;
+                  const ownerName = entry.fantasyTeam?.user?.nickname || entry.fantasyTeam?.name;
+                  const buyoutClause = entry.buyoutClause || Math.round((player.marketValue * 1.5) * 10) / 10;
                   const isLoading = loadingId === player.id;
-                  const canAffordClause = (fantasyTeam?.budget || 0) >= buyoutClause;
                   const isShielded = currentMd && player.shieldedAtMatchdayNumber === currentMd.number;
 
                   return (
-                    <div key={player.id} className="glass-panel p-4 rounded-3xl space-y-3 flex flex-col justify-between">
+                    <div key={entry.id} className="glass-panel p-4 rounded-3xl space-y-3 flex flex-col justify-between">
                       <div className="space-y-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
@@ -682,7 +678,7 @@ export default function MercadoPage() {
 
                         <button
                           onClick={() => handleClausulazoOrShield(player.id, "CLAUSULAZO")}
-                          disabled={isLoading || !canAffordClause || is24hLockdown || isShielded || (myRosterIds.length >= 5)}
+                          disabled={isLoading || is24hLockdown || isShielded || (myRosterIds.length >= 5)}
                           className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all"
                         >
                           <Zap className="w-4 h-4 fill-slate-950" />
