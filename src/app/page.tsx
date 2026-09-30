@@ -486,20 +486,81 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Next Pachanga Schedule */}
+            {/* Next Pachanga Schedule Dynamic Card */}
             <div className="glass-panel p-5 rounded-3xl space-y-3">
-              <h3 className="text-sm font-black text-white flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-amber-400" /> Próxima Pachanga Programada
-              </h3>
-              <div className="p-3 rounded-2xl bg-slate-900/70 border border-emerald-900/40 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-white">Jornada 2 - Próximo Sábado</p>
-                  <p className="text-[11px] text-emerald-400 font-medium">11:00h • 3 Equipos (A, B, C)</p>
-                </div>
-                <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 text-xs font-black border border-amber-500/30">
-                  EN 2 DÍAS
-                </span>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-amber-400" /> Próxima Pachanga Programada
+                </h3>
+                {league?.matchdays && league.matchdays.length > 0 && (
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded-xl border border-emerald-900/40">
+                    {league.matchdays.length} Jornada(s) Creada(s)
+                  </span>
+                )}
               </div>
+
+              {(() => {
+                const matchdaysList = league?.matchdays || [];
+                const activeMatchdays = matchdaysList.filter((m: any) => m.status === "SCHEDULED" || m.status === "LIVE");
+                const nextMd = activeMatchdays.length > 0 ? activeMatchdays[0] : (matchdaysList.length > 0 ? matchdaysList[matchdaysList.length - 1] : null);
+
+                if (!nextMd) {
+                  return (
+                    <div className="p-4 rounded-2xl bg-slate-900/70 border border-emerald-900/40 text-center space-y-2">
+                      <p className="text-xs font-bold text-slate-300">No hay pachangas programadas en esta liga.</p>
+                      <Link href="/admin" className="text-[11px] font-bold text-amber-400 hover:underline inline-block">
+                        + Crear Jornada en el Panel de Administración
+                      </Link>
+                    </div>
+                  );
+                }
+
+                let badgeText = "PROGRAMADA";
+                let badgeClass = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+
+                if (nextMd.status === "LIVE") {
+                  badgeText = "EN DIRECTO";
+                  badgeClass = "bg-amber-400 text-slate-950 font-black animate-pulse";
+                } else if (nextMd.status === "COMPLETED") {
+                  badgeText = "FINALIZADA";
+                  badgeClass = "bg-slate-800 text-slate-400 border-slate-700";
+                } else if (nextMd.date) {
+                  const diffMs = new Date(nextMd.date).getTime() - Date.now();
+                  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                  if (diffDays <= 0) {
+                    badgeText = "HOY";
+                  } else if (diffDays === 1) {
+                    badgeText = "MAÑANA";
+                  } else {
+                    badgeText = `EN ${diffDays} DÍAS`;
+                  }
+                  badgeClass = "bg-amber-500/20 text-amber-300 border-amber-500/30 font-black";
+                }
+
+                return (
+                  <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-emerald-900/40 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black text-white flex items-center gap-2">
+                        #{nextMd.number} - {nextMd.name}
+                      </p>
+                      <p className="text-[11px] text-emerald-400 font-medium mt-0.5">
+                        11:00h • 3 Equipos (Verdes, Azules, Naranjas)
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`px-2.5 py-1 rounded-xl text-[11px] border ${badgeClass}`}>
+                        {badgeText}
+                      </span>
+                      <Link
+                        href="/pachanga"
+                        className="py-1.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md transition-transform"
+                      >
+                        IR
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </main>
