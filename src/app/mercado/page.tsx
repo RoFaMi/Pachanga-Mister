@@ -157,6 +157,37 @@ export default function MercadoPage() {
     }
   };
 
+  const handleCancelBid = async (listingId: string) => {
+    if (!league) return;
+    setLoadingId(listingId);
+    setMessage(null);
+
+    try {
+      const res = await fetch("/api/market/transfers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leagueId: league.id,
+          listingId,
+          action: "CANCEL_BID",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({ text: data.message, type: "success" });
+        await fetchInitialData();
+      } else {
+        setMessage({ text: data.error, type: "error" });
+      }
+    } catch (e) {
+      console.error("Cancel bid error:", e);
+      setMessage({ text: "Error de conexión al retirar puja", type: "error" });
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   const handleMisterOfferDecision = async (listingId: string, decision: "ACCEPT" | "REJECT") => {
     if (!league) return;
     setLoadingId(listingId);
@@ -529,9 +560,18 @@ export default function MercadoPage() {
 
                       {/* Current bid status badge */}
                       {myBid && (
-                        <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold flex items-center justify-between">
-                          <span>🎯 Tu puja guardada:</span>
-                          <span className="text-amber-300 font-black text-xs">{myBid.amount.toFixed(1)}M €</span>
+                        <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span>🎯 Tu puja guardada:</span>
+                            <span className="text-amber-300 font-black text-xs">{myBid.amount.toFixed(1)}M €</span>
+                          </div>
+                          <button
+                            onClick={() => handleCancelBid(listing.id)}
+                            disabled={isLoading}
+                            className="w-full py-1.5 px-2.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[10px] font-bold flex items-center justify-center gap-1 transition-all disabled:opacity-50"
+                          >
+                            <XCircle className="w-3 h-3" /> Salir de la puja / Retirar
+                          </button>
                         </div>
                       )}
                     </div>

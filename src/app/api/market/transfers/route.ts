@@ -108,6 +108,24 @@ export async function POST(req: Request) {
       });
     }
 
+    // ACTION: CANCEL / WITHDRAW PENDING SECRET BID
+    if (action === "CANCEL_BID" || action === "WITHDRAW_BID") {
+      if (!listingId) {
+        return NextResponse.json({ error: "Falta ID de la oferta" }, { status: 400 });
+      }
+
+      await db.marketBid.deleteMany({
+        where: {
+          listingId,
+          fantasyTeamId: fantasyTeam.id,
+        },
+      });
+
+      return NextResponse.json({
+        message: "❌ Has retirado tu puja de mercado correctamente."
+      });
+    }
+
     // ACTION: PLACE SECRET BID ON MARKET LISTING
     if (action === "BID") {
       if (!listingId || !bidAmount) {
@@ -126,12 +144,6 @@ export async function POST(req: Request) {
       if (bidAmount < listing.askingPrice) {
         return NextResponse.json({
           error: `La puja mínima no puede ser inferior al valor de mercado del jugador (${listing.askingPrice.toFixed(1)}M €).`
-        }, { status: 400 });
-      }
-
-      if (fantasyTeam.budget < bidAmount) {
-        return NextResponse.json({
-          error: `No tienes suficiente presupuesto. Tu saldo actual es ${fantasyTeam.budget.toFixed(1)}M €.`
         }, { status: 400 });
       }
 
@@ -269,13 +281,6 @@ export async function POST(req: Request) {
 
       const sellerTeam = existingRosterEntry.fantasyTeam;
       const clauseAmount = existingRosterEntry.buyoutClause || realPlayer.buyoutClause || Math.round(realPlayer.marketValue * 1.5 * 10) / 10;
-
-      // Check buyer budget
-      if (fantasyTeam.budget < clauseAmount) {
-        return NextResponse.json({
-          error: `Presupuesto insuficiente para pagar la cláusula de ${clauseAmount.toFixed(1)}M €. Te faltan ${(clauseAmount - fantasyTeam.budget).toFixed(1)}M €.`
-        }, { status: 400 });
-      }
 
       // Check max roster length (5 futsal players max)
       if (fantasyTeam.roster.length >= 5) {

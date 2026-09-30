@@ -90,16 +90,7 @@ export async function resolveMarketCycle(leagueId: string, cycleId: string) {
         const buyerTeam = bid.fantasyTeam;
         const bidAmount = bid.amount;
 
-        // Validation 1: Check buyer budget
-        if (buyerTeam.budget < bidAmount) {
-          await db.marketBid.update({
-            where: { id: bid.id },
-            data: { status: "REJECTED", rejectionReason: `Presupuesto insuficiente (${buyerTeam.budget.toFixed(1)}M € < ${bidAmount.toFixed(1)}M €)` },
-          });
-          continue;
-        }
-
-        // Validation 2: Check buyer roster count (Max 5 futsal players)
+        // Validation 1: Check buyer roster count (Max 5 futsal players)
         const buyerRoster = await db.fantasyRoster.findMany({
           where: { fantasyTeamId: buyerTeam.id },
         });
