@@ -257,10 +257,10 @@ export default function PlantillaPage() {
           <div className="glass-panel-glow p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <img
-                src={fantasyTeam?.badgeUrl || user?.avatarUrl || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=150&auto=format&fit=crop&q=80"}
+                src={user?.avatarUrl || fantasyTeam?.user?.avatarUrl || fantasyTeam?.badgeUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
                 alt={user?.nickname || "Badge"}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=150&auto=format&fit=crop&q=80";
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
                 }}
                 className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-md"
               />
