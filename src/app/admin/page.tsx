@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ShieldAlert, Plus, CheckCircle2, RefreshCw, Download, Users, Calendar, Lock, ArrowLeft, ArrowRightLeft, UserPlus, Trash2, Upload, UserMinus, UserX, LogOut, Key, RotateCcw, Shuffle, X, Wallet } from "lucide-react";
+import { ShieldAlert, Plus, CheckCircle2, RefreshCw, Download, Users, Calendar, Lock, ArrowLeft, ArrowRightLeft, UserPlus, Trash2, Upload, UserMinus, UserX, LogOut, Key, RotateCcw, Shuffle, X, Wallet, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
@@ -22,6 +22,16 @@ export default function AdminPage() {
   const [creatingPlayer, setCreatingPlayer] = useState(false);
   const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  // Edit Player State (Modal)
+  const [editingPlayer, setEditingPlayer] = useState<any | null>(null);
+  const [editPlayerName, setEditPlayerName] = useState("");
+  const [editPlayerNickname, setEditPlayerNickname] = useState("");
+  const [editPlayerPosition, setEditPlayerPosition] = useState("ALA");
+  const [editPlayerMarketValue, setEditPlayerMarketValue] = useState("10.0");
+  const [editPlayerPhotoUrl, setEditPlayerPhotoUrl] = useState("");
+  const [savingPlayer, setSavingPlayer] = useState(false);
+  const [uploadingEditPhoto, setUploadingEditPhoto] = useState(false);
 
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
@@ -315,6 +325,77 @@ export default function AdminPage() {
     } finally {
       setDeletingPlayerId(null);
     }
+  };
+
+  const handleOpenEditPlayer = (p: any) => {
+    setEditingPlayer(p);
+    setEditPlayerName(p.name || "");
+    setEditPlayerNickname(p.nickname || "");
+    setEditPlayerPosition(p.position || "ALA");
+    setEditPlayerMarketValue(String(p.marketValue || 10.0));
+    setEditPlayerPhotoUrl(p.photoUrl || "");
+  };
+
+  const handleSaveEditPlayer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlayer) return;
+
+    setSavingPlayer(true);
+    setMessage(null);
+
+    try {
+      const res = await authFetch(`/api/admin/players/${editingPlayer.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editPlayerName,
+          nickname: editPlayerNickname,
+          position: editPlayerPosition,
+          marketValue: parseFloat(editPlayerMarketValue) || 10.0,
+          photoUrl: editPlayerPhotoUrl,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(data.message);
+        setEditingPlayer(null);
+        fetchInitialData();
+      } else {
+        setMessage(data.error || "Error al actualizar el jugador");
+      }
+    } catch (err) {
+      console.error("Save edit player error:", err);
+      setMessage("Error al actualizar el jugador");
+    } finally {
+      setSavingPlayer(false);
+    }
+  };
+
+  const handleEditFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      setMessage("La imagen debe ser menor a 8MB");
+      return;
+    }
+
+    setUploadingEditPhoto(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string;
+      if (base64Url) {
+        setEditPlayerPhotoUrl(base64Url);
+      }
+      setUploadingEditPhoto(false);
+    };
+    reader.onerror = () => {
+      setMessage("Error al leer el archivo de imagen");
+      setUploadingEditPhoto(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDeleteUser = async (userId: string, nickname: string) => {
@@ -732,8 +813,17 @@ export default function AdminPage() {
                             <span className="font-bold text-white">{p.name} ({p.nickname})</span>
                             <span className="text-[10px] text-emerald-400">[{p.position}]</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-amber-400">{p.marketValue}M €</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-amber-400 mr-1">{p.marketValue}M €</span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditPlayer(p)}
+                              title={`Editar a ${p.name}`}
+                              className="py-1 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition-all"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                              <span>Editar</span>
+                            </button>
                             <button
                               type="button"
                               disabled={deletingPlayerId === p.id}
@@ -748,6 +838,146 @@ export default function AdminPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Edit Real Player Modal */}
+                  {editingPlayer && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+                      <div className="glass-panel p-6 rounded-3xl max-w-lg w-full space-y-4 border border-amber-500/40 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+                        <button
+                          onClick={() => setEditingPlayer(null)}
+                          className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                            <Pencil className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-black text-white">Editar Jugador Real</h3>
+                            <p className="text-xs text-amber-400 font-semibold">Modificar datos de {editingPlayer.name}</p>
+                          </div>
+                        </div>
+
+                        <form onSubmit={handleSaveEditPlayer} className="space-y-3 pt-2">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Nombre Completo</label>
+                              <input
+                                type="text"
+                                value={editPlayerName}
+                                onChange={(e) => setEditPlayerName(e.target.value)}
+                                required
+                                className="w-full bg-slate-900 border border-emerald-800/60 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Apodo / Nickname</label>
+                              <input
+                                type="text"
+                                value={editPlayerNickname}
+                                onChange={(e) => setEditPlayerNickname(e.target.value)}
+                                required
+                                className="w-full bg-slate-900 border border-emerald-800/60 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Posición</label>
+                              <select
+                                value={editPlayerPosition}
+                                onChange={(e) => setEditPlayerPosition(e.target.value)}
+                                className="w-full bg-slate-900 border border-emerald-800/60 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                              >
+                                <option value="POR">Portero (POR)</option>
+                                <option value="CIERRE">Cierre (CIERRE)</option>
+                                <option value="ALA">Ala (ALA)</option>
+                                <option value="PIVOT">Pívot (PIVOT)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Precio de Mercado (M €)</label>
+                              <input
+                                type="number"
+                                step="0.5"
+                                value={editPlayerMarketValue}
+                                onChange={(e) => setEditPlayerMarketValue(e.target.value)}
+                                required
+                                className="w-full bg-slate-900 border border-emerald-800/60 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Foto del Jugador</label>
+                            <div className="space-y-2">
+                              <label className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs cursor-pointer transition-colors">
+                                <Upload className="w-4 h-4 text-amber-400" />
+                                <span>{uploadingEditPhoto ? "SUBIENDO FOTO..." : "📁 CAMBIAR FOTO DE TU DISPOSITIVO"}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleEditFileUpload}
+                                  disabled={uploadingEditPhoto}
+                                  className="hidden"
+                                />
+                              </label>
+
+                              <input
+                                type="text"
+                                value={editPlayerPhotoUrl}
+                                onChange={(e) => setEditPlayerPhotoUrl(e.target.value)}
+                                placeholder="O pega una URL de imagen (https://...)"
+                                className="w-full bg-slate-900 border border-emerald-800/60 rounded-xl p-2.5 text-xs text-white focus:outline-none"
+                              />
+
+                              {editPlayerPhotoUrl && (
+                                <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-950/70 border border-emerald-900/50">
+                                  <img
+                                    src={editPlayerPhotoUrl}
+                                    alt="Vista previa"
+                                    className="w-10 h-10 rounded-xl object-cover border border-emerald-500/40"
+                                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                  />
+                                  <div className="overflow-hidden flex-1">
+                                    <p className="text-[10px] text-emerald-400 font-bold uppercase">Foto Seleccionada</p>
+                                    <p className="text-[11px] text-slate-300 font-mono truncate">{editPlayerPhotoUrl}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditPlayerPhotoUrl("")}
+                                    className="text-[10px] text-red-400 hover:text-red-300 font-bold px-2 py-1 rounded bg-red-500/10"
+                                  >
+                                    Quitar
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-3 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingPlayer(null)}
+                              className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={savingPlayer}
+                              className="py-2.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md transition-all disabled:opacity-50"
+                            >
+                              {savingPlayer ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
 
                   {/* 3. Registered Managers Management Section */}
                   <div className="glass-panel p-5 rounded-3xl space-y-3">
