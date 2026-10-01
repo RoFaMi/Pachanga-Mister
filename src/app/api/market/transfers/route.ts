@@ -282,6 +282,13 @@ export async function POST(req: Request) {
       const sellerTeam = existingRosterEntry.fantasyTeam;
       const clauseAmount = existingRosterEntry.buyoutClause || realPlayer.buyoutClause || Math.round(realPlayer.marketValue * 1.5 * 10) / 10;
 
+      // Check buyer budget sufficiency
+      if (fantasyTeam.budget < clauseAmount) {
+        return NextResponse.json({
+          error: `No tienes suficiente presupuesto para pagar la cláusula de rescisión de ${clauseAmount.toFixed(1)}M € (Disponible: ${fantasyTeam.budget.toFixed(1)}M €).`
+        }, { status: 400 });
+      }
+
       // Check max roster length (5 futsal players max)
       if (fantasyTeam.roster.length >= 5) {
         return NextResponse.json({
@@ -289,57 +296,61 @@ export async function POST(req: Request) {
         }, { status: 400 });
       }
 
-      // 1. Remove player from seller roster
-      await db.fantasyRoster.delete({
-        where: { id: existingRosterEntry.id },
-      });
-
-      // 2. Add player to buyer roster with +30% escalated clause
       const newBuyoutClause = Math.round(clauseAmount * 1.3 * 10) / 10;
       const occupiedBuyerSlots = fantasyTeam.roster.map((r) => r.positionSlot);
       let targetSlot = positionSlot;
       if (!targetSlot) {
         targetSlot = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"].find((s) => !occupiedBuyerSlots.includes(s)) || "PIVOT";
       }
-      await db.fantasyRoster.create({
-        data: {
-          fantasyTeamId: fantasyTeam.id,
-          realPlayerId,
-          positionSlot: targetSlot,
-          purchasePrice: clauseAmount,
-          buyoutClause: newBuyoutClause,
-        },
-      });
 
-      // 3. Deduct budget from Buyer & Credit budget to Seller
-      await db.fantasyTeam.update({
-        where: { id: fantasyTeam.id },
-        data: { budget: { decrement: clauseAmount } },
-      });
+      // Execute atomic transaction for Clausulazo
+      await db.$transaction(async (tx) => {
+        // 1. Remove player from seller roster
+        await tx.fantasyRoster.delete({
+          where: { id: existingRosterEntry.id },
+        });
 
-      await db.fantasyTeam.update({
-        where: { id: sellerTeam.id },
-        data: { budget: { increment: clauseAmount } },
-      });
+        // 2. Add player to buyer roster with +30% escalated clause
+        await tx.fantasyRoster.create({
+          data: {
+            fantasyTeamId: fantasyTeam.id,
+            realPlayerId,
+            positionSlot: targetSlot,
+            purchasePrice: clauseAmount,
+            buyoutClause: newBuyoutClause,
+          },
+        });
 
-      // 4. Update base player statistics
-      await db.realPlayer.update({
-        where: { id: realPlayerId },
-        data: {
-          clauseIncrements: { increment: 1 },
-        },
-      });
+        // 3. Deduct budget from Buyer & Credit budget to Seller (+clauseAmount)
+        await tx.fantasyTeam.update({
+          where: { id: fantasyTeam.id },
+          data: { budget: { decrement: clauseAmount } },
+        });
 
-      // 5. Log transfer
-      await db.transfer.create({
-        data: {
-          leagueId,
-          buyerTeamId: fantasyTeam.id,
-          sellerTeamId: sellerTeam.id,
-          realPlayerId,
-          price: clauseAmount,
-          type: "CLAUSULAZO",
-        },
+        await tx.fantasyTeam.update({
+          where: { id: sellerTeam.id },
+          data: { budget: { increment: clauseAmount } },
+        });
+
+        // 4. Update base player statistics
+        await tx.realPlayer.update({
+          where: { id: realPlayerId },
+          data: {
+            clauseIncrements: { increment: 1 },
+          },
+        });
+
+        // 5. Log transfer history
+        await tx.transfer.create({
+          data: {
+            leagueId,
+            buyerTeamId: fantasyTeam.id,
+            sellerTeamId: sellerTeam.id,
+            realPlayerId,
+            price: clauseAmount,
+            type: "CLAUSULAZO",
+          },
+        });
       });
 
       // 6. Send notifications
