@@ -62,7 +62,7 @@ export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLog
             MÍSTER <span className="text-emerald-400">PACHANGA</span>
           </span>
           <p className="text-[10px] text-amber-400 font-bold flex items-center gap-1">
-            <Trophy className="w-3 h-3 text-amber-400 inline" /> {activeLeague?.name || "Liga Pachanga 5v5"}
+            <Trophy className="w-3 h-3 text-amber-400 inline" /> {activeLeague?.name || leagues[0]?.name || "Liga Pachanga de los Sabadetes 5v5"}
           </p>
         </div>
       </div>

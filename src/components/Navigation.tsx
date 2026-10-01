@@ -68,6 +68,12 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
 
   // Fetch User's Joined Leagues & Determine Last Opened / Active League
   useEffect(() => {
+    if (propActiveLeague) {
+      setActiveLeague(propActiveLeague);
+    }
+  }, [propActiveLeague]);
+
+  useEffect(() => {
     const fetchLeagues = async () => {
       setIsLoadingLeagues(true);
       try {
@@ -94,7 +100,7 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
     };
 
     fetchLeagues();
-  }, [propActiveLeague]);
+  }, []);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -213,7 +219,7 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-800/40">
             <Trophy className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
             <span className="text-[11px] font-bold text-slate-200 truncate">
-              {activeLeague?.name || "Liga Principal"}
+              {activeLeague?.name || leagues[0]?.name || "Liga Pachanga de los Sabadetes 5v5"}
             </span>
           </div>
         </div>
