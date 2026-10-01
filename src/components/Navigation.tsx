@@ -224,107 +224,36 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
           </div>
         </div>
 
-        {/* TOP CLICKABLE USER & LEAGUE DROPDOWN CARD (Foto 2) */}
-        <div className="p-3 relative" ref={dropdownRef}>
+        {/* USER PROFILE CARD */}
+        <div className="p-3">
           {activeUser ? (
-            <div>
-              {/* Clickable Header Profile Card */}
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full p-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-900 border border-emerald-500/40 flex items-center justify-between transition-all shadow-md group"
-              >
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="relative">
-                    <img
-                      src={activeUser.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                      alt={activeUser.nickname}
-                      className="w-10 h-10 rounded-full bg-emerald-900/50 border-2 border-emerald-400 flex-shrink-0 object-cover"
-                    />
-                  </div>
-                  <div className="text-left overflow-hidden">
-                    <p className="text-xs font-black text-white truncate group-hover:text-emerald-400 transition-colors">
-                      {activeUser.nickname}
-                    </p>
-                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-extrabold border inline-block mt-0.5 ${
-                      isAdmin
-                        ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                        : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                    }`}>
-                      {isAdmin ? "ADMINISTRADOR" : "MÁNAGER"}
-                    </span>
-                  </div>
+            <Link
+              href="/perfil"
+              className="w-full p-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-900 border border-emerald-500/40 flex items-center justify-between transition-all shadow-md group"
+              title="Mi Perfil"
+            >
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="relative">
+                  <img
+                    src={activeUser.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                    alt={activeUser.nickname}
+                    className="w-10 h-10 rounded-full bg-emerald-900/50 border-2 border-emerald-400 flex-shrink-0 object-cover"
+                  />
                 </div>
-                <ChevronDown className={`w-4 h-4 text-emerald-400 transition-transform duration-200 flex-shrink-0 ${isDropdownOpen ? "rotate-180" : ""}`} />
-              </button>
-
-              {/* DESPLEGABLE / DROPDOWN MENU (Foto 2) */}
-              {isDropdownOpen && (
-                <div className="absolute top-full left-3 right-3 mt-1.5 z-50 bg-slate-950 border border-emerald-500/40 rounded-2xl p-3 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
-                  {/* Mis Ligas Title */}
-                  <div className="flex items-center justify-between text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider px-1">
-                    <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-400" /> Mis Ligas</span>
-                    <span className="text-slate-400 text-[9px] font-normal">
-                      {isLoadingLeagues ? "(...)" : `(${leagues.length})`}
-                    </span>
-                  </div>
-
-                  {/* List of Leagues */}
-                  <div className="max-h-40 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                    {isLoadingLeagues ? (
-                      <div className="p-3 text-center text-xs text-emerald-400 font-medium flex items-center justify-center gap-2">
-                        <span className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></span>
-                        Cargando ligas...
-                      </div>
-                    ) : leagues.length > 0 ? (
-                      leagues.map((league) => {
-                        const isSelected = activeLeague?.id === league.id;
-                        return (
-                          <button
-                            key={league.id}
-                            type="button"
-                            onClick={() => handleSelectLeague(league)}
-                            className={`w-full p-2 rounded-xl text-left text-xs font-bold flex items-center justify-between transition-all ${
-                              isSelected
-                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
-                                : "text-slate-300 hover:bg-slate-900 hover:text-white"
-                            }`}
-                          >
-                            <span className="truncate pr-2">{league.name}</span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />}
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="p-2 text-center text-xs text-slate-400">Sin ligas unidas</div>
-                    )}
-                  </div>
-
-                  <div className="border-t border-emerald-900/40 pt-2 space-y-1.5">
-                    {/* Crear Liga Button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setShowCreateLeagueModal(true);
-                      }}
-                      className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-1.5 transition-all"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> + Crear Nueva Liga
-                    </button>
-
-                    {/* Unirme a otra liga */}
-                    <Link
-                      href="/unirse"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="w-full py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-emerald-950/60 border border-emerald-900/50 text-emerald-400 font-bold text-[11px] flex items-center justify-center gap-1 transition-all"
-                    >
-                      <Sparkles className="w-3 h-3 text-amber-400" /> Unirme a otra liga
-                    </Link>
-                  </div>
+                <div className="text-left overflow-hidden">
+                  <p className="text-xs font-black text-white truncate group-hover:text-emerald-400 transition-colors">
+                    {activeUser.nickname}
+                  </p>
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded font-extrabold border inline-block mt-0.5 ${
+                    isAdmin
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                      : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                  }`}>
+                    {isAdmin ? "ADMINISTRADOR" : "MÁNAGER"}
+                  </span>
                 </div>
-              )}
-            </div>
+              </div>
+            </Link>
           ) : (
             <div className="p-2 rounded-2xl bg-slate-900/90 border border-emerald-900/40">
               <Link

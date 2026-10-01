@@ -69,16 +69,6 @@ export function Header({ user, leagues = [], activeLeague, onSelectLeague, onLog
 
       {/* Right Controls */}
       <div className="flex items-center gap-2.5 ml-auto">
-        {/* Join League Button */}
-        <Link
-          href="/unirse"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-xs font-bold text-emerald-300 transition-all shadow-sm"
-          title="Unirse a una liga con código de invitación"
-        >
-          <Trophy className="w-3.5 h-3.5 text-amber-400" />
-          <span className="hidden sm:inline">Unirme a Liga</span>
-        </Link>
-
         {/* User Badge & Logout */}
         {activeUser ? (
           <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-emerald-950/40 border border-emerald-800/40">

@@ -6,29 +6,8 @@ export async function GET() {
   try {
     const user = await getCurrentUser();
 
-    if (!user) {
-      const publicLeagues = await db.league.findMany({
-        take: 10,
-        include: {
-          members: {
-            include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
-          },
-          fantasyTeams: true,
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      return NextResponse.json({ leagues: publicLeagues.map((l) => ({ ...l, myRole: null })) });
-    }
-
-    // Find all leagues where user is Owner OR Member OR has a Fantasy Team
-    const userLeagues = await db.league.findMany({
-      where: {
-        OR: [
-          { ownerId: user.id },
-          { members: { some: { userId: user.id } } },
-          { fantasyTeams: { some: { userId: user.id } } },
-        ],
-      },
+    const leagues = await db.league.findMany({
+      take: 10,
       include: {
         members: {
           include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
@@ -38,24 +17,10 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    if (userLeagues.length === 0) {
-      const allLeagues = await db.league.findMany({
-        take: 10,
-        include: {
-          members: {
-            include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
-          },
-          fantasyTeams: true,
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      return NextResponse.json({ leagues: allLeagues.map((l) => ({ ...l, myRole: null })) });
-    }
-
     return NextResponse.json({
-      leagues: userLeagues.map((l) => {
-        const mem = l.members.find((m) => m.userId === user.id);
-        const isOwner = l.ownerId === user.id;
+      leagues: leagues.map((l) => {
+        const mem = user ? l.members.find((m) => m.userId === user.id) : null;
+        const isOwner = user ? l.ownerId === user.id : false;
         const role = isOwner ? "ADMIN" : mem?.role || "PARTICIPANT";
         return { ...l, myRole: role };
       }),
