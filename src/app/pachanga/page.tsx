@@ -36,12 +36,6 @@ export default function PachangaLivePage() {
   const [ratingModalOpen, setRatingModalOpen] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("pachanga_user");
-      if (stored) {
-        try { setUser(JSON.parse(stored)); } catch {}
-      }
-    }
     fetchInitialData();
   }, []);
 
@@ -65,7 +59,6 @@ export default function PachangaLivePage() {
 
   const fetchInitialData = async () => {
     try {
-      const activeLeagueId = typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") || "" : "";
       const [dataUser, dataLeagues] = await Promise.all([
         safeFetchJson<{ user: any }>("/api/auth/me"),
         safeFetchJson<{ leagues: any[] }>("/api/leagues"),
@@ -74,11 +67,8 @@ export default function PachangaLivePage() {
       if (dataUser?.user) setUser(dataUser.user);
 
       if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
-        const targetLeague = dataLeagues.leagues.find((l: any) => l.id === activeLeagueId) || dataLeagues.leagues[0];
-        if (targetLeague && typeof window !== "undefined") {
-          localStorage.setItem("pachanga_active_league_id", targetLeague.id);
-        }
-        const dataDetail = await safeFetchJson<{ league: any }>(`/api/leagues/${targetLeague.id}`);
+        const demoLeague = dataLeagues.leagues[0];
+        const dataDetail = await safeFetchJson<{ league: any }>(`/api/leagues/${demoLeague.id}`);
         if (dataDetail?.league) {
           setLeague(dataDetail.league);
           const currentMd = dataDetail.league.matchdays?.[0];

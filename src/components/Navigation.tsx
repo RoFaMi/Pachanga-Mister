@@ -35,7 +35,6 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
   // User Leagues & Active League State
   const [leagues, setLeagues] = useState<any[]>([]);
   const [activeLeague, setActiveLeague] = useState<any>(propActiveLeague || null);
-  const [isLoadingLeagues, setIsLoadingLeagues] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -68,39 +67,28 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
 
   // Fetch User's Joined Leagues & Determine Last Opened / Active League
   useEffect(() => {
-    if (propActiveLeague) {
-      setActiveLeague(propActiveLeague);
-    }
-  }, [propActiveLeague]);
-
-  useEffect(() => {
     const fetchLeagues = async () => {
-      setIsLoadingLeagues(true);
       try {
         const res = await authFetch("/api/leagues");
         if (res.ok) {
           const data = await res.json();
-          if (data.leagues) {
+          if (data.leagues && data.leagues.length > 0) {
             setLeagues(data.leagues);
             const savedLeagueId = typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") : null;
             const currentActive = data.leagues.find((l: any) => l.id === savedLeagueId) || propActiveLeague || data.leagues[0];
-            if (currentActive) {
-              setActiveLeague(currentActive);
-              if (typeof window !== "undefined") {
-                localStorage.setItem("pachanga_active_league_id", currentActive.id);
-              }
+            setActiveLeague(currentActive);
+            if (currentActive && typeof window !== "undefined") {
+              localStorage.setItem("pachanga_active_league_id", currentActive.id);
             }
           }
         }
       } catch (e) {
         console.error("Error fetching leagues in Navigation:", e);
-      } finally {
-        setIsLoadingLeagues(false);
       }
     };
 
     fetchLeagues();
-  }, []);
+  }, [propActiveLeague]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -219,41 +207,105 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-800/40">
             <Trophy className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
             <span className="text-[11px] font-bold text-slate-200 truncate">
-              {activeLeague?.name || leagues[0]?.name || "Liga Pachanga de los Sabadetes 5v5"}
+              {activeLeague?.name || "Liga Pachanga de los Sabadetes 5v5"}
             </span>
           </div>
         </div>
 
-        {/* USER PROFILE CARD */}
-        <div className="p-3">
+        {/* TOP CLICKABLE USER & LEAGUE DROPDOWN CARD (Foto 2) */}
+        <div className="p-3 relative" ref={dropdownRef}>
           {activeUser ? (
-            <Link
-              href="/perfil"
-              className="w-full p-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-900 border border-emerald-500/40 flex items-center justify-between transition-all shadow-md group"
-              title="Mi Perfil"
-            >
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="relative">
-                  <img
-                    src={activeUser.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                    alt={activeUser.nickname}
-                    className="w-10 h-10 rounded-full bg-emerald-900/50 border-2 border-emerald-400 flex-shrink-0 object-cover"
-                  />
+            <div>
+              {/* Clickable Header Profile Card */}
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full p-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-900 border border-emerald-500/40 flex items-center justify-between transition-all shadow-md group"
+              >
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={activeUser.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                      alt={activeUser.nickname}
+                      className="w-10 h-10 rounded-full bg-emerald-900/50 border-2 border-emerald-400 flex-shrink-0 object-cover"
+                    />
+                  </div>
+                  <div className="text-left overflow-hidden">
+                    <p className="text-xs font-black text-white truncate group-hover:text-emerald-400 transition-colors">
+                      {activeUser.nickname}
+                    </p>
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-extrabold border inline-block mt-0.5 ${
+                      isAdmin
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                        : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                    }`}>
+                      {isAdmin ? "ADMINISTRADOR" : "MÁNAGER"}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-left overflow-hidden">
-                  <p className="text-xs font-black text-white truncate group-hover:text-emerald-400 transition-colors">
-                    {activeUser.nickname}
-                  </p>
-                  <span className={`text-[9px] px-1.5 py-0.2 rounded font-extrabold border inline-block mt-0.5 ${
-                    isAdmin
-                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                      : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                  }`}>
-                    {isAdmin ? "ADMINISTRADOR" : "MÁNAGER"}
-                  </span>
+                <ChevronDown className={`w-4 h-4 text-emerald-400 transition-transform duration-200 flex-shrink-0 ${isDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* DESPLEGABLE / DROPDOWN MENU (Foto 2) */}
+              {isDropdownOpen && (
+                <div className="absolute top-full left-3 right-3 mt-1.5 z-50 bg-slate-950 border border-emerald-500/40 rounded-2xl p-3 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
+                  {/* Mis Ligas Title */}
+                  <div className="flex items-center justify-between text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider px-1">
+                    <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-400" /> Mis Ligas</span>
+                    <span className="text-slate-400 text-[9px] font-normal">({leagues.length})</span>
+                  </div>
+
+                  {/* List of Leagues */}
+                  <div className="max-h-40 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                    {leagues.length > 0 ? (
+                      leagues.map((league) => {
+                        const isSelected = activeLeague?.id === league.id;
+                        return (
+                          <button
+                            key={league.id}
+                            type="button"
+                            onClick={() => handleSelectLeague(league)}
+                            className={`w-full p-2 rounded-xl text-left text-xs font-bold flex items-center justify-between transition-all ${
+                              isSelected
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
+                                : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                            }`}
+                          >
+                            <span className="truncate pr-2">{league.name}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="p-2 text-center text-xs text-slate-400">Sin ligas unidas</div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-emerald-900/40 pt-2 space-y-1.5">
+                    {/* Crear Liga Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setShowCreateLeagueModal(true);
+                      }}
+                      className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> + Crear Nueva Liga
+                    </button>
+
+                    {/* Unirme a otra liga */}
+                    <Link
+                      href="/unirse"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="w-full py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-emerald-950/60 border border-emerald-900/50 text-emerald-400 font-bold text-[11px] flex items-center justify-center gap-1 transition-all"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-400" /> Unirme a otra liga
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              )}
+            </div>
           ) : (
             <div className="p-2 rounded-2xl bg-slate-900/90 border border-emerald-900/40">
               <Link
@@ -320,15 +372,15 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
       </aside>
 
       {/* Mobile Bottom Tab Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full glass-panel bg-[#0b1310]/95 backdrop-blur-md border-t border-emerald-900/50 z-50 px-1 py-1 flex items-center justify-around overflow-x-auto shadow-2xl custom-scrollbar">
-        {navItems.map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full glass-panel bg-[#0b1310]/95 backdrop-blur-md border-t border-emerald-900/50 z-50 px-1 py-1 flex items-center justify-around shadow-2xl">
+        {navItems.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`min-w-[56px] flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
+              className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
                 isActive ? "text-emerald-400 font-bold" : item.highlight ? "text-amber-400 font-bold" : "text-slate-400"
               }`}
             >

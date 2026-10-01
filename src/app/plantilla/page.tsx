@@ -21,12 +21,6 @@ export default function PlantillaPage() {
   const [sellPriceInput, setSellPriceInput] = useState<string>("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("pachanga_user");
-      if (stored) {
-        try { setUser(JSON.parse(stored)); } catch {}
-      }
-    }
     fetchInitialData();
   }, []);
 

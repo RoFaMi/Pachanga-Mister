@@ -6,33 +6,47 @@ export async function GET() {
   try {
     const user = await getCurrentUser();
 
-    const leagues = await db.league.findMany({
-      take: 10,
+    if (!user) {
+      const publicLeagues = await db.league.findMany({
+        take: 5,
+        include: {
+          members: {
+            include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
+          },
+          fantasyTeams: true,
+        },
+      });
+      return NextResponse.json({ leagues: publicLeagues.map((l) => ({ ...l, myRole: null })) });
+    }
+
+    const memberships = await db.leagueMember.findMany({
+      where: { userId: user.id },
       include: {
-        owner: { select: { id: true, fullName: true, nickname: true, email: true } },
-        members: {
-          include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
+        league: {
+          include: {
+            members: {
+              include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
+            },
+            fantasyTeams: true,
+          },
         },
-        fantasyTeams: {
-          include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
-        },
-        realPlayers: {
-          include: { user: { select: { id: true, fullName: true, nickname: true } } },
-          orderBy: { name: "asc" }
-        },
-        matchdays: { orderBy: { number: "asc" } },
       },
-      orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({
-      leagues: leagues.map((l) => {
-        const mem = user ? l.members.find((m) => m.userId === user.id) : null;
-        const isOwner = user ? l.ownerId === user.id : false;
-        const role = isOwner ? "ADMIN" : mem?.role || "PARTICIPANT";
-        return { ...l, myRole: role };
-      }),
-    });
+    if (memberships.length === 0) {
+      const allLeagues = await db.league.findMany({
+        take: 5,
+        include: {
+          members: {
+            include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
+          },
+          fantasyTeams: true,
+        },
+      });
+      return NextResponse.json({ leagues: allLeagues.map((l) => ({ ...l, myRole: null })) });
+    }
+
+    return NextResponse.json({ leagues: memberships.map((m) => ({ ...m.league, myRole: m.role })) });
   } catch (error) {
     console.error("Get Leagues Error:", error);
     return NextResponse.json({ error: "Error al obtener ligas" }, { status: 500 });
