@@ -30,10 +30,16 @@ function base64UrlDecode(str: string): string {
 }
 
 export function signToken(user: SessionUser): string {
+  const safeAvatar = user.avatarUrl && !user.avatarUrl.startsWith("data:") ? user.avatarUrl : null;
   const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload = base64UrlEncode(
     JSON.stringify({
-      ...user,
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      nickname: user.nickname,
+      role: user.role,
+      avatarUrl: safeAvatar,
       exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days
     })
   );
