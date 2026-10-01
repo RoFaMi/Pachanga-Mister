@@ -52,6 +52,8 @@ model League {
   marketCycles       MarketCycle[]
   auditLogs          AuditLog[]
   directOffers       DirectOffer[]
+
+  @@index([ownerId])
 }
 
 model LeagueMember {
@@ -65,6 +67,8 @@ model LeagueMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([leagueId, userId])
+  @@index([userId])
+  @@index([leagueId])
 }
 
 model RealPlayer {
@@ -96,6 +100,9 @@ model RealPlayer {
   marketValues      PlayerMarketValue[]
   marketListings    MarketListing[]
   directOffers      DirectOffer[]
+
+  @@index([leagueId])
+  @@index([position])
 }
 
 model FantasyTeam {
@@ -118,12 +125,14 @@ model FantasyTeam {
   scores             FantasyScore[]
   boughtTransfers    Transfer[]       @relation("BuyerTeam")
   soldTransfers      Transfer[]       @relation("SellerTeam")
-  sellerListings     MarketListing[]
+  sellerListings     MarketListing[]  @relation("SellerTeam")
   bids               MarketBid[]
   buyerDirectOffers  DirectOffer[]    @relation("BuyerDirectOffers")
   sellerDirectOffers DirectOffer[]    @relation("SellerDirectOffers")
 
   @@unique([leagueId, userId])
+  @@index([leagueId])
+  @@index([userId])
 }
 
 model FantasyRoster {
@@ -139,6 +148,8 @@ model FantasyRoster {
   realPlayer    RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
 
   @@unique([fantasyTeamId, realPlayerId])
+  @@index([fantasyTeamId])
+  @@index([realPlayerId])
 }
 
 model FantasyCaptain {
@@ -153,6 +164,8 @@ model FantasyCaptain {
   realPlayer    RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
 
   @@unique([fantasyTeamId, matchdayId])
+  @@index([fantasyTeamId])
+  @@index([matchdayId])
 }
 
 model Matchday {
@@ -171,6 +184,8 @@ model Matchday {
   scores        FantasyScore[]
 
   @@unique([leagueId, number])
+  @@index([leagueId])
+  @@index([status])
 }
 
 model MatchTeam {
@@ -184,6 +199,8 @@ model MatchTeam {
   matchesAsB    Match[]       @relation("TeamBMatches")
   penaltyWins   Match[]       @relation("PenaltyWins")
   lineups       MatchLineup[]
+
+  @@index([matchdayId])
 }
 
 model Match {
@@ -210,6 +227,9 @@ model Match {
   events              MatchEvent[]
   ratings             MatchRating[]
   fantasyScores       FantasyScore[]
+
+  @@index([matchdayId])
+  @@index([status])
 }
 
 model MatchLineup {
@@ -224,6 +244,8 @@ model MatchLineup {
   realPlayer    RealPlayer @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, realPlayerId])
+  @@index([matchId])
+  @@index([realPlayerId])
 }
 
 model MatchEvent {
@@ -237,6 +259,9 @@ model MatchEvent {
   match            Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
   realPlayer       RealPlayer @relation("PlayerEvents", fields: [realPlayerId], references: [id], onDelete: Cascade)
   assister         RealPlayer?@relation("AssistedEvents", fields: [assisterPlayerId], references: [id])
+
+  @@index([matchId])
+  @@index([realPlayerId])
 }
 
 model MatchRating {
@@ -252,6 +277,8 @@ model MatchRating {
   targetPlayer       RealPlayer @relation("TargetPlayer", fields: [targetRealPlayerId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, evaluatorUserId, targetRealPlayerId])
+  @@index([matchId])
+  @@index([targetRealPlayerId])
 }
 
 model FantasyScore {
@@ -274,6 +301,9 @@ model FantasyScore {
   match                   Match?      @relation(fields: [matchId], references: [id])
   fantasyTeam             FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
   realPlayer              RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+
+  @@index([matchdayId])
+  @@index([fantasyTeamId])
 }
 
 model Transfer {
@@ -291,6 +321,9 @@ model Transfer {
   buyerTeam     FantasyTeam? @relation("BuyerTeam", fields: [buyerTeamId], references: [id])
   sellerTeam    FantasyTeam? @relation("SellerTeam", fields: [sellerTeamId], references: [id])
   realPlayer    RealPlayer   @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId])
+  @@index([createdAt])
 }
 
 model PlayerMarketValue {
@@ -300,6 +333,8 @@ model PlayerMarketValue {
   createdAt    DateTime   @default(now())
 
   realPlayer   RealPlayer @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+
+  @@index([realPlayerId])
 }
 
 model Notification {
@@ -312,6 +347,9 @@ model Notification {
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
 }
 
 model AuditLog {
@@ -324,6 +362,8 @@ model AuditLog {
 
   league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId])
 }
 
 model MarketCycle {
@@ -339,6 +379,9 @@ model MarketCycle {
 
   league         League          @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   listings       MarketListing[]
+
+  @@index([leagueId])
+  @@index([status])
 }
 
 model MarketListing {
@@ -358,8 +401,12 @@ model MarketListing {
   league        League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   marketCycle   MarketCycle? @relation(fields: [marketCycleId], references: [id], onDelete: Cascade)
   realPlayer    RealPlayer   @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
-  sellerTeam    FantasyTeam? @relation(fields: [sellerTeamId], references: [id])
+  sellerTeam    FantasyTeam? @relation("SellerTeam", fields: [sellerTeamId], references: [id])
   bids          MarketBid[]
+
+  @@index([leagueId])
+  @@index([status])
+  @@index([marketCycleId])
 }
 
 model MarketBid {
@@ -375,6 +422,8 @@ model MarketBid {
   fantasyTeam     FantasyTeam   @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
 
   @@unique([listingId, fantasyTeamId])
+  @@index([listingId])
+  @@index([fantasyTeamId])
 }
 
 model DirectOffer {
@@ -391,6 +440,9 @@ model DirectOffer {
   buyerTeam       FantasyTeam @relation("BuyerDirectOffers", fields: [buyerTeamId], references: [id], onDelete: Cascade)
   sellerTeam      FantasyTeam @relation("SellerDirectOffers", fields: [sellerTeamId], references: [id], onDelete: Cascade)
   realPlayer      RealPlayer  @relation(fields: [realPlayerId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId])
+  @@index([sellerTeamId])
 }
 
 

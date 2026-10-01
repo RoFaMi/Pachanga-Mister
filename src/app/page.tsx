@@ -48,7 +48,11 @@ export default function DashboardPage() {
       }
 
       if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
-        const activeL = dataLeagues.leagues[0];
+        const activeLeagueId = typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") : null;
+        const activeL = dataLeagues.leagues.find((l: any) => l.id === activeLeagueId) || dataLeagues.leagues[0];
+        if (activeL && typeof window !== "undefined") {
+          localStorage.setItem("pachanga_active_league_id", activeL.id);
+        }
 
         const [dataDetail, dataTransfers] = await Promise.all([
           safeFetchJson<{ league: any; myFantasyTeam: any }>(`/api/leagues/${activeL.id}`),

@@ -45,9 +45,9 @@ export async function GET(req: any, context: any) {
               include: {
                 teamA: true,
                 teamB: true,
-                lineups: { include: { realPlayer: true } },
-                events: { include: { realPlayer: true, assister: true } },
-                ratings: true,
+                lineups: { select: { id: true, matchTeamId: true, realPlayerId: true, isGoalkeeper: true } },
+                events: { select: { id: true, type: true, realPlayerId: true, assisterPlayerId: true, minute: true } },
+                ratings: { select: { id: true, targetRealPlayerId: true, evaluatorUserId: true, score: true } },
               },
             },
             matchTeams: true,
