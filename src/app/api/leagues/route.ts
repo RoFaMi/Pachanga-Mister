@@ -8,45 +8,58 @@ export async function GET() {
 
     if (!user) {
       const publicLeagues = await db.league.findMany({
-        take: 5,
+        take: 10,
         include: {
           members: {
             include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
           },
           fantasyTeams: true,
         },
+        orderBy: { createdAt: "desc" },
       });
       return NextResponse.json({ leagues: publicLeagues.map((l) => ({ ...l, myRole: null })) });
     }
 
-    const memberships = await db.leagueMember.findMany({
-      where: { userId: user.id },
-      include: {
-        league: {
-          include: {
-            members: {
-              include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
-            },
-            fantasyTeams: true,
-          },
-        },
+    // Find all leagues where user is Owner OR Member OR has a Fantasy Team
+    const userLeagues = await db.league.findMany({
+      where: {
+        OR: [
+          { ownerId: user.id },
+          { members: { some: { userId: user.id } } },
+          { fantasyTeams: { some: { userId: user.id } } },
+        ],
       },
+      include: {
+        members: {
+          include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
+        },
+        fantasyTeams: true,
+      },
+      orderBy: { createdAt: "desc" },
     });
 
-    if (memberships.length === 0) {
+    if (userLeagues.length === 0) {
       const allLeagues = await db.league.findMany({
-        take: 5,
+        take: 10,
         include: {
           members: {
             include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
           },
           fantasyTeams: true,
         },
+        orderBy: { createdAt: "desc" },
       });
       return NextResponse.json({ leagues: allLeagues.map((l) => ({ ...l, myRole: null })) });
     }
 
-    return NextResponse.json({ leagues: memberships.map((m) => ({ ...m.league, myRole: m.role })) });
+    return NextResponse.json({
+      leagues: userLeagues.map((l) => {
+        const mem = l.members.find((m) => m.userId === user.id);
+        const isOwner = l.ownerId === user.id;
+        const role = isOwner ? "ADMIN" : mem?.role || "PARTICIPANT";
+        return { ...l, myRole: role };
+      }),
+    });
   } catch (error) {
     console.error("Get Leagues Error:", error);
     return NextResponse.json({ error: "Error al obtener ligas" }, { status: 500 });
