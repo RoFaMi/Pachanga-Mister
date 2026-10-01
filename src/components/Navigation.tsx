@@ -35,6 +35,7 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
   // User Leagues & Active League State
   const [leagues, setLeagues] = useState<any[]>([]);
   const [activeLeague, setActiveLeague] = useState<any>(propActiveLeague || null);
+  const [isLoadingLeagues, setIsLoadingLeagues] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -68,22 +69,27 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
   // Fetch User's Joined Leagues & Determine Last Opened / Active League
   useEffect(() => {
     const fetchLeagues = async () => {
+      setIsLoadingLeagues(true);
       try {
         const res = await authFetch("/api/leagues");
         if (res.ok) {
           const data = await res.json();
-          if (data.leagues && data.leagues.length > 0) {
+          if (data.leagues) {
             setLeagues(data.leagues);
             const savedLeagueId = typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") : null;
             const currentActive = data.leagues.find((l: any) => l.id === savedLeagueId) || propActiveLeague || data.leagues[0];
-            setActiveLeague(currentActive);
-            if (currentActive && typeof window !== "undefined") {
-              localStorage.setItem("pachanga_active_league_id", currentActive.id);
+            if (currentActive) {
+              setActiveLeague(currentActive);
+              if (typeof window !== "undefined") {
+                localStorage.setItem("pachanga_active_league_id", currentActive.id);
+              }
             }
           }
         }
       } catch (e) {
         console.error("Error fetching leagues in Navigation:", e);
+      } finally {
+        setIsLoadingLeagues(false);
       }
     };
 
@@ -252,12 +258,19 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
                   {/* Mis Ligas Title */}
                   <div className="flex items-center justify-between text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider px-1">
                     <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-400" /> Mis Ligas</span>
-                    <span className="text-slate-400 text-[9px] font-normal">({leagues.length})</span>
+                    <span className="text-slate-400 text-[9px] font-normal">
+                      {isLoadingLeagues ? "(...)" : `(${leagues.length})`}
+                    </span>
                   </div>
 
                   {/* List of Leagues */}
                   <div className="max-h-40 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                    {leagues.length > 0 ? (
+                    {isLoadingLeagues ? (
+                      <div className="p-3 text-center text-xs text-emerald-400 font-medium flex items-center justify-center gap-2">
+                        <span className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></span>
+                        Cargando ligas...
+                      </div>
+                    ) : leagues.length > 0 ? (
                       leagues.map((league) => {
                         const isSelected = activeLeague?.id === league.id;
                         return (

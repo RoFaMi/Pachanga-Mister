@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [fantasyTeam, setFantasyTeam] = useState<any>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   }, []);
 
   const fetchInitialData = async () => {
+    setIsLoading(true);
     try {
       const [dataUser, dataLeagues] = await Promise.all([
         safeFetchJson<{ user: any }>("/api/auth/me"),
@@ -65,6 +67,8 @@ export default function DashboardPage() {
       }
     } catch (e) {
       console.error("Error loading dashboard data:", e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -290,12 +294,17 @@ export default function DashboardPage() {
                 <Trophy className="w-5 h-5 text-amber-400" /> Clasificación en Vivo de la Liga
               </h3>
               <Link href="/clasificacion" className="text-xs font-bold text-emerald-400 hover:underline flex items-center gap-1">
-                Ver Todo ({league?.fantasyTeams?.length || 0} Managers) <ChevronRight className="w-3.5 h-3.5" />
+                Ver Todo ({isLoading ? "..." : `${league?.fantasyTeams?.length || 0} Managers`}) <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            {(!league?.fantasyTeams || league.fantasyTeams.length === 0) ? (
-              <p className="text-xs text-slate-400 font-medium py-4 text-center">Cargando clasificación de la liga...</p>
+            {isLoading ? (
+              <div className="py-8 text-center space-y-3">
+                <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-xs text-emerald-300 font-semibold animate-pulse">Cargando clasificación y managers de la liga...</p>
+              </div>
+            ) : (!league?.fantasyTeams || league.fantasyTeams.length === 0) ? (
+              <p className="text-xs text-slate-400 font-medium py-4 text-center">Aún no hay managers registrados en esta liga.</p>
             ) : (
               <div className="space-y-2">
                 {league.fantasyTeams.map((team: any, idx: number) => {
