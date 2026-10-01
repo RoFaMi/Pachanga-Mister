@@ -372,15 +372,15 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
       </aside>
 
       {/* Mobile Bottom Tab Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full glass-panel bg-[#0b1310]/95 backdrop-blur-md border-t border-emerald-900/50 z-50 px-1 py-1 flex items-center justify-around shadow-2xl">
-        {navItems.slice(0, 5).map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full glass-panel bg-[#0b1310]/95 backdrop-blur-md border-t border-emerald-900/50 z-50 px-1 py-1 flex items-center justify-around overflow-x-auto shadow-2xl custom-scrollbar">
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
+              className={`min-w-[56px] flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all ${
                 isActive ? "text-emerald-400 font-bold" : item.highlight ? "text-amber-400 font-bold" : "text-slate-400"
               }`}
             >

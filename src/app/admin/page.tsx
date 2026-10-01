@@ -136,26 +136,50 @@ export default function AdminPage() {
     reader.readAsDataURL(file);
   };
 
+  const [loadingData, setLoadingData] = useState(true);
+
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("pachanga_user");
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {}
+      }
+    }
     fetchInitialData();
   }, []);
 
   const fetchInitialData = async () => {
+    setLoadingData(true);
     try {
+      const activeLeagueId = typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") || "" : "";
+
       const [dataUser, dataLeagues] = await Promise.all([
         safeFetchJson<{ user: any }>("/api/auth/me"),
         safeFetchJson<{ leagues: any[] }>("/api/leagues"),
       ]);
 
-      if (dataUser?.user) setUser(dataUser.user);
+      if (dataUser?.user) {
+        setUser(dataUser.user);
+        try {
+          localStorage.setItem("pachanga_user", JSON.stringify(dataUser.user));
+        } catch (e) {}
+      }
 
       if (dataLeagues?.leagues && dataLeagues.leagues.length > 0) {
-        const demoLeague = dataLeagues.leagues[0];
-        const dataDetail = await safeFetchJson<{ league: any }>(`/api/leagues/${demoLeague.id}`);
+        const targetLeague = dataLeagues.leagues.find((l: any) => l.id === activeLeagueId) || dataLeagues.leagues[0];
+        if (targetLeague && typeof window !== "undefined") {
+          localStorage.setItem("pachanga_active_league_id", targetLeague.id);
+        }
+
+        const dataDetail = await safeFetchJson<{ league: any }>(`/api/leagues/${targetLeague.id}`);
         if (dataDetail?.league) setLeague(dataDetail.league);
       }
     } catch (e) {
       console.error("Error loading admin data:", e);
+    } finally {
+      setLoadingData(false);
     }
   };
 
@@ -488,7 +512,7 @@ export default function AdminPage() {
     document.body.removeChild(link);
   };
 
-  const isAdmin = user?.role === "ADMIN" || league?.ownerId === user?.id;
+  const isAdmin = user?.role === "ADMIN" || (league && (league.ownerId === user?.id || league.myRole === "ADMIN"));
 
   return (
     <div className="flex min-h-screen bg-[#0b1310] text-slate-100 pb-20 md:pb-0">
@@ -498,7 +522,13 @@ export default function AdminPage() {
         <Header user={user} activeLeague={league} onSwitchUser={handleSwitchUser} />
 
         <main className="p-4 space-y-6 flex-1">
-          {!isAdmin ? (
+          {loadingData && !user ? (
+            <div className="glass-panel p-12 rounded-3xl text-center max-w-md mx-auto my-12 space-y-3 border border-emerald-500/30">
+              <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin mx-auto" />
+              <p className="text-sm font-extrabold text-white">Cargando panel de administración...</p>
+              <p className="text-xs text-slate-400">Verificando permisos y cargando datos de la liga</p>
+            </div>
+          ) : !isAdmin ? (
             /* NON-ADMIN RESTRICTED ACCESS SCREEN */
             <div className="glass-panel p-8 rounded-3xl text-center max-w-md mx-auto my-12 space-y-4 border border-amber-500/30">
               <div className="w-16 h-16 rounded-3xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 mx-auto">
