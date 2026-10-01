@@ -1,10 +1,8 @@
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = typeof window !== "undefined" ? localStorage.getItem("pachanga_token") : null;
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string>),
-  };
-  if (token && !headers["Authorization"] && !headers["authorization"]) {
-    headers["Authorization"] = `Bearer ${token}`;
+  const headers = new Headers(options.headers || {});
+  if (token && !headers.has("Authorization") && !headers.has("authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
   return fetch(url, { ...options, headers });
 }

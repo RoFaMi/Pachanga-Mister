@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     const proto = req.headers.get("x-forwarded-proto");
     const referer = req.headers.get("referer") || "";
-    const isHttps = proto === "https" || referer.startsWith("https://") || process.env.NODE_ENV === "production";
+    const isHttps = proto === "https" || referer.startsWith("https://");
 
     const token = signToken(sessionUser);
 
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     res.cookies.set("pachanga_token", token, {
       httpOnly: true,
       secure: isHttps,
-      sameSite: isHttps ? "none" : "lax",
+      sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });

@@ -193,6 +193,9 @@ export default function AdminPage() {
       const data = await res.json().catch(() => null);
       if (res.ok && data?.token) {
         localStorage.setItem("pachanga_token", data.token);
+        if (data.user) {
+          localStorage.setItem("pachanga_user", JSON.stringify(data.user));
+        }
         window.location.reload();
       }
     } catch (e) {
@@ -522,7 +525,7 @@ export default function AdminPage() {
         <Header user={user} activeLeague={league} onSwitchUser={handleSwitchUser} />
 
         <main className="p-4 space-y-6 flex-1">
-          {loadingData && !user ? (
+          {loadingData ? (
             <div className="glass-panel p-12 rounded-3xl text-center max-w-md mx-auto my-12 space-y-3 border border-emerald-500/30">
               <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin mx-auto" />
               <p className="text-sm font-extrabold text-white">Cargando panel de administración...</p>
