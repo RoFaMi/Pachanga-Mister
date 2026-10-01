@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ShieldAlert, Plus, CheckCircle2, RefreshCw, Download, Users, Calendar, Lock, ArrowLeft, ArrowRightLeft, UserPlus, Trash2, Upload, UserMinus, UserX, LogOut, Key, RotateCcw } from "lucide-react";
+import { ShieldAlert, Plus, CheckCircle2, RefreshCw, Download, Users, Calendar, Lock, ArrowLeft, ArrowRightLeft, UserPlus, Trash2, Upload, UserMinus, UserX, LogOut, Key, RotateCcw, Shuffle, X, Wallet } from "lucide-react";
 import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
   const [resettingStats, setResettingStats] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   // Matchday editing state
   const [editingMatchday, setEditingMatchday] = useState<any | null>(null);
@@ -64,17 +65,22 @@ export default function AdminPage() {
     }
   };
 
-  const handleResetRealStats = async () => {
-    if (!confirm("⚠️ ¿Estás seguro de que deseas REINICIAR TODAS LAS ESTADÍSTICAS REALES Y JORNADAS? Esta acción dejará los marcadores a 0 ya que aún no hay jornada jugada.")) {
-      return;
-    }
+  const executeReset = async (mode: "EMPTY" | "DRAFT_5") => {
+    const confirmMessage = mode === "DRAFT_5"
+      ? "⚠️ ¿Estás seguro de que deseas REINICIAR LA LIGA con plantillas aleatorias (5 jugadores < 30M € + saldo restante)?"
+      : "⚠️ ¿Estás seguro de que deseas REINICIAR LA LIGA con plantillas vacías y 30.0M € de saldo?";
+
+    if (!confirm(confirmMessage)) return;
 
     setResettingStats(true);
+    setShowResetModal(false);
     setMessage(null);
 
     try {
       const res = await authFetch("/api/admin/reset-stats", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resetMode: mode, leagueId: league?.id }),
       });
 
       const data = await res.json();
@@ -82,11 +88,11 @@ export default function AdminPage() {
         setMessage(data.message);
         fetchInitialData();
       } else {
-        setMessage(data.error || "Error al reiniciar estadísticas");
+        setMessage(data.error || "Error al reiniciar la liga");
       }
     } catch (err) {
       console.error("Reset stats error:", err);
-      setMessage("Error al reiniciar estadísticas");
+      setMessage("Error al reiniciar la liga");
     } finally {
       setResettingStats(false);
     }
@@ -809,21 +815,99 @@ export default function AdminPage() {
                   {/* 4. Reset Real Statistics Card */}
                   <div className="glass-panel p-5 rounded-3xl space-y-3 border border-amber-500/30 bg-amber-950/10">
                     <h3 className="text-base font-black text-white flex items-center gap-2">
-                      <RotateCcw className="w-5 h-5 text-amber-400" /> Reiniciar Estadísticas Reales y Marcadores
+                      <RotateCcw className="w-5 h-5 text-amber-400" /> Reiniciar Liga, Estadísticas y Plantillas
                     </h3>
                     <p className="text-xs text-slate-300">
-                      Elimina todas las jornadas, partidos registrados y puntuaciones para empezar la liga limpia desde 0 puntos.
+                      Permite reiniciar la liga eligiendo si comenzar con plantillas vacías (30M €) o con un repartos aleatorio de 5 jugadores que sumen menos de 30M € más el dinero sobrante.
                     </p>
                     <button
                       type="button"
                       disabled={resettingStats}
-                      onClick={handleResetRealStats}
+                      onClick={() => setShowResetModal(true)}
                       className="w-full py-3 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-extrabold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                     >
                       <RotateCcw className="w-4 h-4 text-amber-400" />
-                      <span>{resettingStats ? "REINICIANDO..." : "REINICIAR ESTADÍSTICAS (DEJAR TODO A 0)"}</span>
+                      <span>{resettingStats ? "REINICIANDO LIGA..." : "⚡ OPIONES DE REINICIO DE LIGA (VACÍO O CON JUGADORES)"}</span>
                     </button>
                   </div>
+
+                  {/* Reset Options Modal */}
+                  {showResetModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+                      <div className="glass-panel p-6 rounded-3xl max-w-lg w-full space-y-5 border border-amber-500/40 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+                        <button
+                          onClick={() => setShowResetModal(false)}
+                          className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                            <RotateCcw className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-black text-white">Reiniciar Liga y Equipos</h3>
+                            <p className="text-xs text-emerald-400 font-semibold">Selecciona la modalidad de inicio para la liga</p>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-300">
+                          Elige cómo deseas que comiencen los equipos de la liga tras reiniciar todas las jornadas, puntuaciones y transacciones:
+                        </p>
+
+                        <div className="space-y-3">
+                          {/* Option 1: Empty Rosters + 30M € */}
+                          <button
+                            type="button"
+                            onClick={() => executeReset("EMPTY")}
+                            className="w-full p-4 rounded-2xl bg-slate-900/90 hover:bg-emerald-950/50 border border-emerald-500/30 hover:border-emerald-500/60 text-left transition-all group space-y-1"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-extrabold text-white text-sm flex items-center gap-2 group-hover:text-emerald-400">
+                                <UserX className="w-4 h-4 text-emerald-400" /> 1. Equipos Vacíos + 30.0M €
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                30M € Líquidos
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400">
+                              Reinicia todos los equipos sin ningún jugador en plantilla y asigna a cada mánager los 30.0M € completos de presupuesto inicial.
+                            </p>
+                          </button>
+
+                          {/* Option 2: Random 5 Players (<30M €) + Remaining Budget */}
+                          <button
+                            type="button"
+                            onClick={() => executeReset("DRAFT_5")}
+                            className="w-full p-4 rounded-2xl bg-slate-900/90 hover:bg-amber-950/50 border border-amber-500/30 hover:border-amber-500/60 text-left transition-all group space-y-1"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-extrabold text-white text-sm flex items-center gap-2 group-hover:text-amber-400">
+                                <Shuffle className="w-4 h-4 text-amber-400" /> 2. Plantilla Aleatoria de 5 Jugadores (&lt; 30M €)
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                Quinteto + Restante
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400">
+                              Reparte 5 jugadores por mánager (1 POR, 1 CIERRE, 2 ALA, 1 PIVOT) que sumen menos de 30M €. El presupuesto restante (30M - valor plantilla) se abonará en dinero.
+                            </p>
+                          </button>
+                        </div>
+
+                        <div className="pt-2 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setShowResetModal(false)}
+                            className="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-slate-300"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* 4. Leave League & Delete Account Section */}
                   <div className="glass-panel p-5 rounded-3xl space-y-4 border border-red-900/30 bg-red-950/10">
