@@ -173,6 +173,8 @@ export default function AdminPage() {
           localStorage.setItem("pachanga_active_league_id", targetLeague.id);
         }
 
+        setLeague(targetLeague);
+
         const dataDetail = await safeFetchJson<{ league: any }>(`/api/leagues/${targetLeague.id}`);
         if (dataDetail?.league) setLeague(dataDetail.league);
       }

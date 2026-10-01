@@ -9,10 +9,18 @@ export async function GET() {
     const leagues = await db.league.findMany({
       take: 10,
       include: {
+        owner: { select: { id: true, fullName: true, nickname: true, email: true } },
         members: {
           include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
         },
-        fantasyTeams: true,
+        fantasyTeams: {
+          include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
+        },
+        realPlayers: {
+          include: { user: { select: { id: true, fullName: true, nickname: true } } },
+          orderBy: { name: "asc" }
+        },
+        matchdays: { orderBy: { number: "asc" } },
       },
       orderBy: { createdAt: "desc" },
     });
