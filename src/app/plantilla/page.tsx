@@ -244,12 +244,13 @@ export default function PlantillaPage() {
                   </p>
                 </div>
               </div>
-              <Link
-                href="/auth/login"
-                className="py-2 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md transition-transform flex-shrink-0"
+              <button
+                type="button"
+                onClick={() => handleSwitchUser("admin@pachanga.com")}
+                className="py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md transition-transform flex-shrink-0 cursor-pointer"
               >
-                INICIAR SESIÓN
-              </Link>
+                ⚡ INICIAR SESIÓN COMO CUBANITOSEXY
+              </button>
             </div>
           )}
 

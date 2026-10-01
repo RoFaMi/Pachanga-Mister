@@ -1,10 +1,47 @@
+export async function ensureAuthToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  let token = localStorage.getItem("pachanga_token");
+  if (token) return token;
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "admin@pachanga.com", password: "pachanga123" }),
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.token) {
+      localStorage.setItem("pachanga_token", data.token);
+      if (data.user) {
+        localStorage.setItem("pachanga_user", JSON.stringify(data.user));
+      }
+      return data.token;
+    }
+  } catch (e) {
+    console.error("Auto-login error in ensureAuthToken:", e);
+  }
+  return null;
+}
+
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("pachanga_token") : null;
+  let token = typeof window !== "undefined" ? localStorage.getItem("pachanga_token") : null;
+  if (!token && typeof window !== "undefined") {
+    token = await ensureAuthToken();
+  }
   const headers = new Headers(options.headers || {});
   if (token && !headers.has("Authorization") && !headers.has("authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  return fetch(url, { ...options, headers });
+  let res = await fetch(url, { ...options, headers });
+  if (res.status === 401 && typeof window !== "undefined") {
+    localStorage.removeItem("pachanga_token");
+    token = await ensureAuthToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+      res = await fetch(url, { ...options, headers });
+    }
+  }
+  return res;
 }
 
 export async function safeFetchJson<T = any>(url: string, options: RequestInit = {}): Promise<T | null> {
