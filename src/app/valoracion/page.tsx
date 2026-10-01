@@ -123,7 +123,7 @@ export default function PeerRatingPage() {
           <div className="glass-panel-glow p-5 rounded-3xl flex items-center justify-between">
             <div>
               <h1 className="text-xl font-extrabold text-white flex items-center gap-2">
-                <Star className="w-6 h-6 text-amber-400 fill-amber-400" /> Valoración de Compañeros (1-10)
+                <Star className="w-6 h-6 text-amber-400 fill-amber-400" /> Valoración de Compañeros (0-10)
               </h1>
               <p className="text-xs text-emerald-400 font-semibold mt-1">
                 🔒 Votación 100% Anónima y Privada. La media aritmética se convierte directamente en puntos Fantasy.
@@ -159,7 +159,7 @@ export default function PeerRatingPage() {
               {/* Player Rating Cards */}
               <div className="space-y-4">
                 {playersToRate.map((player: any) => {
-                  const currentScore = ratings[player.id] || 5;
+                  const currentScore = ratings[player.id] ?? 5;
                   return (
                     <div key={player.id} className="glass-panel p-4 rounded-3xl space-y-3">
                       <div className="flex items-center justify-between">

@@ -33,10 +33,10 @@ export async function POST(req: Request) {
       where: { userId: user.id },
     });
 
-    // Validate that each target score is between 1 and 10
+    // Validate that each target score is between 0 and 10
     for (const r of ratings) {
-      if (typeof r.score !== "number" || r.score < 1 || r.score > 10) {
-        return NextResponse.json({ error: "Las valoraciones deben estar entre 1 y 10" }, { status: 400 });
+      if (typeof r.score !== "number" || r.score < 0 || r.score > 10) {
+        return NextResponse.json({ error: "Las valoraciones deben estar entre 0 y 10" }, { status: 400 });
       }
 
       // Cannot rate oneself
