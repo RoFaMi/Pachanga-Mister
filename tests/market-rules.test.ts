@@ -313,6 +313,9 @@ async function runMarketRulesTestSuite() {
   } catch (error) {
     console.error("❌ Fatal error in test suite execution:", error);
   } finally {
+    // Clean up test bids so testing data does not contaminate user UI
+    await db.marketBid.deleteMany({});
+    console.log("🧹 Cleaned up test market bids from database.");
     await db.$disconnect();
   }
 }
