@@ -76,55 +76,22 @@ export async function POST(req: Request) {
           continue;
         }
 
-        const porPool = leagueRealPlayers.filter((p) => p.position === "POR");
-        const cierrePool = leagueRealPlayers.filter((p) => p.position === "CIERRE");
-        const alaPool = leagueRealPlayers.filter((p) => p.position === "ALA");
-        const pivotPool = leagueRealPlayers.filter((p) => p.position === "PIVOT");
-
-        const getFallbackPlayer = (primaryPool: typeof leagueRealPlayers, usedIds: Set<string>) => {
-          const unusedPrimary = primaryPool.filter((p) => !usedIds.has(p.id));
-          if (unusedPrimary.length > 0) {
-            return unusedPrimary[Math.floor(Math.random() * unusedPrimary.length)];
-          }
-          const unusedGlobal = leagueRealPlayers.filter((p) => !usedIds.has(p.id));
-          if (unusedGlobal.length > 0) {
-            return unusedGlobal[Math.floor(Math.random() * unusedGlobal.length)];
-          }
-          // If pool exhausted, pick any
-          return primaryPool[Math.floor(Math.random() * primaryPool.length)] || leagueRealPlayers[0];
-        };
-
         const targetBudget = team.league.initialBudget || 30.0;
+        const slots = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"];
         let selected5: Array<{ player: typeof leagueRealPlayers[0]; slot: string }> = [];
         let bestSum = Infinity;
         let bestSelection: typeof selected5 = [];
 
-        // Attempt up to 50 draws to find squad where sum <= targetBudget
+        // Attempt up to 50 draws to find 5 random players (regardless of position) where sum <= targetBudget
         for (let attempt = 0; attempt < 50; attempt++) {
-          const usedIds = new Set<string>();
+          // Shuffle available players
+          const shuffled = [...leagueRealPlayers].sort(() => Math.random() - 0.5);
+          const current5 = shuffled.slice(0, 5);
 
-          const por = getFallbackPlayer(porPool, usedIds);
-          usedIds.add(por.id);
-
-          const cierre = getFallbackPlayer(cierrePool, usedIds);
-          usedIds.add(cierre.id);
-
-          const ala1 = getFallbackPlayer(alaPool, usedIds);
-          usedIds.add(ala1.id);
-
-          const ala2 = getFallbackPlayer(alaPool, usedIds);
-          usedIds.add(ala2.id);
-
-          const pivot = getFallbackPlayer(pivotPool, usedIds);
-          usedIds.add(pivot.id);
-
-          const currentSelection = [
-            { player: por, slot: "POR" },
-            { player: cierre, slot: "CIERRE" },
-            { player: ala1, slot: "ALA_1" },
-            { player: ala2, slot: "ALA_2" },
-            { player: pivot, slot: "PIVOT" },
-          ];
+          const currentSelection = current5.map((player, idx) => ({
+            player,
+            slot: slots[idx % slots.length],
+          }));
 
           const sumValue = currentSelection.reduce((acc, s) => acc + s.player.marketValue, 0);
 

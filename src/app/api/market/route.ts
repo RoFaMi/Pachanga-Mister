@@ -60,19 +60,15 @@ export async function GET(req: Request) {
       }),
       db.league.findUnique({
         where: { id: leagueId },
-        include: {
-          realPlayers: {
-            include: {
-              rosterEntries: {
-                include: { fantasyTeam: true },
-              },
-            },
-          },
-          matchdays: {
-            where: { status: "SCHEDULED" },
-            orderBy: { number: "asc" },
-            take: 1,
-          },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          logoUrl: true,
+          initialBudget: true,
+          maxMembers: true,
+          maxOwnersPerPlayer: true,
+          ownerId: true,
         },
       }),
       db.fantasyTeam.findUnique({
