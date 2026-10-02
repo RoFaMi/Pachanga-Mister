@@ -122,16 +122,49 @@ export default function AdminPage() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64Url = event.target?.result as string;
-      if (base64Url) {
-        setPlayerPhotoUrl(base64Url);
-        setMessage("Foto de tu dispositivo cargada correctamente");
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) {
+        setUploadingPhoto(false);
+        return;
       }
-      setUploadingPhoto(false);
-    };
-    reader.onerror = () => {
-      setMessage("Error al leer el archivo de imagen");
-      setUploadingPhoto(false);
+
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          const MAX_SIZE = 150;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height = Math.round((height * MAX_SIZE) / width);
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width = Math.round((width * MAX_SIZE) / height);
+              height = MAX_SIZE;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          const compressedWebP = canvas.toDataURL("image/webp", 0.75);
+          setPlayerPhotoUrl(compressedWebP);
+          setMessage("Foto de tu dispositivo cargada y comprimida correctamente.");
+        } catch {
+          setPlayerPhotoUrl(rawDataUrl);
+        } finally {
+          setUploadingPhoto(false);
+        }
+      };
+      img.onerror = () => {
+        setMessage("Error al procesar la imagen");
+        setUploadingPhoto(false);
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -372,65 +405,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      setMessage("La imagen debe ser menor a 8MB");
-      return;
-    }
-
-    setUploadingPhoto(true);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const rawDataUrl = event.target?.result as string;
-      if (!rawDataUrl) {
-        setUploadingPhoto(false);
-        return;
-      }
-
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          const MAX_SIZE = 150;
-          let width = img.width;
-          let height = img.height;
-          if (width > height) {
-            if (width > MAX_SIZE) {
-              height = Math.round((height * MAX_SIZE) / width);
-              width = MAX_SIZE;
-            }
-          } else {
-            if (height > MAX_SIZE) {
-              width = Math.round((width * MAX_SIZE) / height);
-              height = MAX_SIZE;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          ctx?.drawImage(img, 0, 0, width, height);
-
-          const compressedWebP = canvas.toDataURL("image/webp", 0.75);
-          setPlayerPhotoUrl(compressedWebP);
-          setMessage("Foto comprimida y cargada con éxito.");
-        } catch {
-          setPlayerPhotoUrl(rawDataUrl);
-        } finally {
-          setUploadingPhoto(false);
-        }
-      };
-      img.onerror = () => {
-        setMessage("Error al procesar la imagen");
-        setUploadingPhoto(false);
-      };
-      img.src = rawDataUrl;
-    };
-    reader.readAsDataURL(file);
-  };
 
   const handleEditFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
