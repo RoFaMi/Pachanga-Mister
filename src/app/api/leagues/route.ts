@@ -9,11 +9,16 @@ export async function GET() {
     if (!user) {
       const publicLeagues = await db.league.findMany({
         take: 5,
-        include: {
-          members: {
-            include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
-          },
-          fantasyTeams: true,
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          description: true,
+          logoUrl: true,
+          initialBudget: true,
+          maxMembers: true,
+          ownerId: true,
+          createdAt: true,
         },
       });
       return NextResponse.json({ leagues: publicLeagues.map((l) => ({ ...l, myRole: null })) });
@@ -21,13 +26,19 @@ export async function GET() {
 
     const memberships = await db.leagueMember.findMany({
       where: { userId: user.id },
-      include: {
+      select: {
+        role: true,
         league: {
-          include: {
-            members: {
-              include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
-            },
-            fantasyTeams: true,
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            description: true,
+            logoUrl: true,
+            initialBudget: true,
+            maxMembers: true,
+            ownerId: true,
+            createdAt: true,
           },
         },
       },
@@ -36,17 +47,28 @@ export async function GET() {
     if (memberships.length === 0) {
       const allLeagues = await db.league.findMany({
         take: 5,
-        include: {
-          members: {
-            include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
-          },
-          fantasyTeams: true,
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          description: true,
+          logoUrl: true,
+          initialBudget: true,
+          maxMembers: true,
+          ownerId: true,
+          createdAt: true,
         },
       });
-      return NextResponse.json({ leagues: allLeagues.map((l) => ({ ...l, myRole: null })) });
+      return NextResponse.json(
+        { leagues: allLeagues.map((l) => ({ ...l, myRole: null })) },
+        { headers: { "Cache-Control": "private, max-age=15, stale-while-revalidate=60" } }
+      );
     }
 
-    return NextResponse.json({ leagues: memberships.map((m) => ({ ...m.league, myRole: m.role })) });
+    return NextResponse.json(
+      { leagues: memberships.map((m) => ({ ...m.league, myRole: m.role })) },
+      { headers: { "Cache-Control": "private, max-age=15, stale-while-revalidate=60" } }
+    );
   } catch (error) {
     console.error("Get Leagues Error:", error);
     return NextResponse.json({ error: "Error al obtener ligas" }, { status: 500 });

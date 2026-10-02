@@ -5,7 +5,7 @@ import { Star, CheckCircle2, ShieldCheck, User, Info, ArrowLeft } from "lucide-r
 import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
-import { safeFetchJson } from "@/lib/api";
+import { safeFetchJson, authFetch } from "@/lib/api";
 
 export default function PeerRatingPage() {
   const [user, setUser] = useState<any>(null);
@@ -89,7 +89,7 @@ export default function PeerRatingPage() {
         score,
       }));
 
-      const res = await fetch("/api/ratings", {
+      const res = await authFetch("/api/ratings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

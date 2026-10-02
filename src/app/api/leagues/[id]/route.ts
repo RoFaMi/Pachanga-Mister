@@ -10,47 +10,143 @@ export async function GET(req: any, context: any) {
 
     const league = await db.league.findUnique({
       where: { id },
-      include: {
-        owner: { select: { id: true, fullName: true, nickname: true, email: true } },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        description: true,
+        logoUrl: true,
+        maxMembers: true,
+        initialBudget: true,
+        maxOwnersPerPlayer: true,
+        scoringConfig: true,
+        ownerId: true,
+        createdAt: true,
+        updatedAt: true,
+        owner: { select: { id: true, fullName: true, nickname: true, email: true, avatarUrl: true } },
         members: {
-          include: { user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } } },
+          select: {
+            id: true,
+            role: true,
+            userId: true,
+            joinedAt: true,
+            user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } },
+          },
         },
         realPlayers: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            nickname: true,
+            position: true,
+            marketValue: true,
+            buyoutClause: true,
+            photoUrl: true,
+            isDemo: true,
+            userId: true,
             user: { select: { id: true, fullName: true, nickname: true } },
-            rosterEntries: {
-              include: {
-                fantasyTeam: {
-                  include: {
-                    user: { select: { id: true, nickname: true, fullName: true } },
+          },
+        },
+        fantasyTeams: {
+          select: {
+            id: true,
+            name: true,
+            badgeUrl: true,
+            budget: true,
+            totalPoints: true,
+            lastMatchdayPoints: true,
+            accumulatedEarnings: true,
+            userId: true,
+            user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } },
+            roster: {
+              select: {
+                id: true,
+                positionSlot: true,
+                purchasePrice: true,
+                buyoutClause: true,
+                realPlayerId: true,
+                realPlayer: {
+                  select: {
+                    id: true,
+                    name: true,
+                    nickname: true,
+                    position: true,
+                    marketValue: true,
+                    buyoutClause: true,
+                    photoUrl: true,
                   },
                 },
               },
             },
-          },
-        },
-        fantasyTeams: {
-          include: {
-            user: { select: { id: true, fullName: true, nickname: true, avatarUrl: true } },
-            roster: {
-              include: { realPlayer: true },
+            captains: {
+              select: {
+                id: true,
+                matchdayId: true,
+                realPlayerId: true,
+              },
             },
-            captains: true,
           },
           orderBy: { totalPoints: "desc" },
         },
         matchdays: {
-          include: {
-            matches: {
-              include: {
-                teamA: true,
-                teamB: true,
-                lineups: { include: { realPlayer: true } },
-                events: { include: { realPlayer: true, assister: true } },
-                ratings: true,
+          select: {
+            id: true,
+            number: true,
+            name: true,
+            status: true,
+            date: true,
+            matchTeams: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
               },
             },
-            matchTeams: true,
+            matches: {
+              select: {
+                id: true,
+                matchNumber: true,
+                status: true,
+                scoreA: true,
+                scoreB: true,
+                durationSeconds: true,
+                endedCondition: true,
+                isPenaltyShootout: true,
+                penaltyWinnerTeamId: true,
+                teamAId: true,
+                teamBId: true,
+                teamA: { select: { id: true, name: true, color: true } },
+                teamB: { select: { id: true, name: true, color: true } },
+                lineups: {
+                  select: {
+                    id: true,
+                    matchTeamId: true,
+                    realPlayerId: true,
+                    isGoalkeeper: true,
+                    realPlayer: { select: { id: true, name: true, nickname: true, photoUrl: true } },
+                  },
+                },
+                events: {
+                  select: {
+                    id: true,
+                    type: true,
+                    realPlayerId: true,
+                    assisterPlayerId: true,
+                    minute: true,
+                    realPlayer: { select: { id: true, name: true, nickname: true } },
+                    assister: { select: { id: true, name: true, nickname: true } },
+                  },
+                },
+                ratings: {
+                  select: {
+                    id: true,
+                    evaluatorUserId: true,
+                    targetRealPlayerId: true,
+                    score: true,
+                  },
+                },
+              },
+            },
           },
           orderBy: { number: "asc" },
         },
@@ -93,11 +189,14 @@ export async function GET(req: any, context: any) {
       }
     }
 
-    return NextResponse.json({
-      league,
-      userRole: myMembership?.role || null,
-      myFantasyTeam: myFantasyTeam || null,
-    });
+    return NextResponse.json(
+      {
+        league,
+        userRole: myMembership?.role || null,
+        myFantasyTeam: myFantasyTeam || null,
+      },
+      { headers: { "Cache-Control": "private, max-age=10, stale-while-revalidate=30" } }
+    );
   } catch (error) {
     console.error("Get League Detail Error:", error);
     return NextResponse.json({ error: "Error al obtener la liga" }, { status: 500 });

@@ -269,7 +269,7 @@ export default function AdminPage() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/admin/players", {
+      const res = await authFetch("/api/admin/players", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -308,7 +308,7 @@ export default function AdminPage() {
     setMessage(null);
 
     try {
-      const res = await fetch(`/api/admin/players/${playerId}`, {
+      const res = await authFetch(`/api/admin/players/${playerId}`, {
         method: "DELETE",
       });
 

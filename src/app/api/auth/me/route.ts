@@ -33,7 +33,10 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ user: user || null });
+    return NextResponse.json(
+      { user: user || null },
+      { headers: { "Cache-Control": "private, max-age=15, stale-while-revalidate=60" } }
+    );
   } catch (error) {
     console.error("Auth Me Error:", error);
     return NextResponse.json({ user: null });

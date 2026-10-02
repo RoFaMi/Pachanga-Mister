@@ -20,7 +20,7 @@ import {
   Check,
   Sparkles,
 } from "lucide-react";
-import { authFetch } from "@/lib/api";
+import { authFetch, safeFetchJson } from "@/lib/api";
 
 interface NavigationProps {
   user?: any;
@@ -69,17 +69,14 @@ export function Navigation({ user, activeLeague: propActiveLeague, onLogout }: N
   useEffect(() => {
     const fetchLeagues = async () => {
       try {
-        const res = await authFetch("/api/leagues");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.leagues && data.leagues.length > 0) {
-            setLeagues(data.leagues);
-            const savedLeagueId = typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") : null;
-            const currentActive = data.leagues.find((l: any) => l.id === savedLeagueId) || propActiveLeague || data.leagues[0];
-            setActiveLeague(currentActive);
-            if (currentActive && typeof window !== "undefined") {
-              localStorage.setItem("pachanga_active_league_id", currentActive.id);
-            }
+        const data = await safeFetchJson<{ leagues: any[] }>("/api/leagues");
+        if (data?.leagues && data.leagues.length > 0) {
+          setLeagues(data.leagues);
+          const savedLeagueId = typeof window !== "undefined" ? localStorage.getItem("pachanga_active_league_id") : null;
+          const currentActive = data.leagues.find((l: any) => l.id === savedLeagueId) || propActiveLeague || data.leagues[0];
+          setActiveLeague(currentActive);
+          if (currentActive && typeof window !== "undefined") {
+            localStorage.setItem("pachanga_active_league_id", currentActive.id);
           }
         }
       } catch (e) {

@@ -84,7 +84,7 @@ export async function GET(req: Request) {
         },
         include: {
           realPlayer: true,
-          fantasyTeam: { include: { user: true } },
+          fantasyTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },
         },
       }),
     ]);
@@ -119,7 +119,7 @@ export async function GET(req: Request) {
             status: "PENDING",
           },
           include: {
-            buyerTeam: { include: { user: true } },
+            buyerTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },
             realPlayer: true,
           },
         }),
@@ -130,17 +130,20 @@ export async function GET(req: Request) {
       incomingDirectOffers = directOffers;
     }
 
-    return NextResponse.json({
-      league: leagueData,
-      myFantasyTeam: fantasyTeam,
-      listings: activeListings,
-      myBids,
-      pendingMisterOffers,
-      incomingDirectOffers,
-      rivalRosterEntries,
-      nextRenewalAt,
-      cycleNumber: activeCycle?.cycleNumber || 1,
-    });
+    return NextResponse.json(
+      {
+        league: leagueData,
+        myFantasyTeam: fantasyTeam,
+        listings: activeListings,
+        myBids,
+        pendingMisterOffers,
+        incomingDirectOffers,
+        rivalRosterEntries,
+        nextRenewalAt,
+        cycleNumber: activeCycle?.cycleNumber || 1,
+      },
+      { headers: { "Cache-Control": "private, max-age=10, stale-while-revalidate=30" } }
+    );
   } catch (error) {
     console.error("GET /api/market error:", error);
     return NextResponse.json({ error: "Error al obtener el mercado" }, { status: 500 });

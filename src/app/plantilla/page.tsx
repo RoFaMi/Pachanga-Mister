@@ -450,7 +450,7 @@ export default function PlantillaPage() {
                               alert("Necesitas al menos 2.0M € de presupuesto para blindar la cláusula.");
                               return;
                             }
-                            const res = await fetch("/api/market/transfers", {
+                            const res = await authFetch("/api/market/transfers", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({

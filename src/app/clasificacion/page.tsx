@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Trophy, Medal, Flame, Star, Users, Shield, Zap, X, Send, AlertCircle, CheckCircle } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
-import { safeFetchJson } from "@/lib/api";
+import { safeFetchJson, authFetch } from "@/lib/api";
 
 export default function ClasificacionPage() {
   const [user, setUser] = useState<any>(null);
@@ -77,7 +77,7 @@ export default function ClasificacionPage() {
     setModalToast(null);
 
     try {
-      const res = await fetch("/api/market/direct-offers", {
+      const res = await authFetch("/api/market/direct-offers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -109,7 +109,7 @@ export default function ClasificacionPage() {
     setModalToast(null);
 
     try {
-      const res = await fetch("/api/market/transfers", {
+      const res = await authFetch("/api/market/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

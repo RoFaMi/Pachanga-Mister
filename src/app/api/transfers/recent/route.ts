@@ -19,14 +19,17 @@ export async function GET(req: Request) {
       where: { leagueId },
       include: {
         realPlayer: true,
-        buyerTeam: { include: { user: true } },
-        sellerTeam: { include: { user: true } },
+        buyerTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },
+        sellerTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },
       },
       orderBy: { createdAt: "desc" },
       take: 10,
     });
 
-    return NextResponse.json({ recentTransfers });
+    return NextResponse.json(
+      { recentTransfers },
+      { headers: { "Cache-Control": "private, max-age=15, stale-while-revalidate=60" } }
+    );
   } catch (error) {
     console.error("GET recent transfers error:", error);
     return NextResponse.json({ error: "Error al obtener historial de fichajes" }, { status: 500 });

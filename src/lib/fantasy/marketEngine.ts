@@ -19,9 +19,9 @@ export async function getOrResolveMarketRound(leagueId: string) {
         where: { status: "ACTIVE" },
         include: {
           realPlayer: true,
-          sellerTeam: { include: { user: true } },
+          sellerTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },
           bids: {
-            include: { fantasyTeam: { include: { user: true } } },
+            include: { fantasyTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } } },
             orderBy: [
               { amount: "desc" },
               { createdAt: "asc" }, // Server timestamp tie-breaker: earliest offer wins!
@@ -48,9 +48,9 @@ export async function getOrResolveMarketRound(leagueId: string) {
     where: { leagueId, status: "ACTIVE", marketCycleId: activeCycle.id },
     include: {
       realPlayer: true,
-      sellerTeam: { include: { user: true } },
+      sellerTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },
       bids: {
-        include: { fantasyTeam: { include: { user: true } } },
+        include: { fantasyTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } } },
         orderBy: [
           { amount: "desc" },
           { createdAt: "asc" },
@@ -68,9 +68,9 @@ export async function resolveMarketCycle(leagueId: string, cycleId: string) {
     where: { leagueId, status: "ACTIVE", marketCycleId: cycleId },
     include: {
       realPlayer: true,
-      sellerTeam: { include: { user: true } },
+      sellerTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },
       bids: {
-        include: { fantasyTeam: { include: { user: true } } },
+        include: { fantasyTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } } },
         orderBy: [
           { amount: "desc" },
           { createdAt: "asc" }, // Server timestamp tie-breaker
@@ -351,9 +351,9 @@ export async function createNewMarketCycle(leagueId: string) {
     where: { leagueId, status: "ACTIVE" },
     include: {
       realPlayer: true,
-      sellerTeam: { include: { user: true } },
+      sellerTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },
       bids: {
-        include: { fantasyTeam: { include: { user: true } } },
+        include: { fantasyTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } } },
         orderBy: [
           { amount: "desc" },
           { createdAt: "asc" },

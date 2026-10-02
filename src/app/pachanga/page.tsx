@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Play, Pause, RotateCcw, Plus, CheckCircle2, Shield, Flame, Award, Timer, Volume2 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Header } from "@/components/Header";
-import { safeFetchJson } from "@/lib/api";
+import { safeFetchJson, authFetch } from "@/lib/api";
 
 export default function PachangaLivePage() {
   const [user, setUser] = useState<any>(null);
@@ -161,7 +161,7 @@ export default function PachangaLivePage() {
     try {
       if (!matchday || !selectedTeamA || !selectedTeamB) return;
 
-      const res = await fetch("/api/matches", {
+      const res = await authFetch("/api/matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
