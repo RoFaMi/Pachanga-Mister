@@ -45,7 +45,14 @@ export async function getOrResolveMarketRound(leagueId: string) {
 
   // Active cycle is valid and running -> return its active listings immediately (Fast <50ms read)
   return await db.marketListing.findMany({
-    where: { leagueId, status: "ACTIVE", marketCycleId: activeCycle.id },
+    where: {
+      leagueId,
+      status: "ACTIVE",
+      OR: [
+        { marketCycleId: activeCycle.id },
+        { marketCycleId: null },
+      ],
+    },
     include: {
       realPlayer: true,
       sellerTeam: { include: { user: { select: { id: true, nickname: true, fullName: true, avatarUrl: true } } } },

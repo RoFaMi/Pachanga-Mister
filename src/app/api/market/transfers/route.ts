@@ -213,13 +213,18 @@ export async function POST(req: Request) {
       const price = askPrice && askPrice >= realPlayer.marketValue ? askPrice : realPlayer.marketValue;
       const misterOfferPrice = Math.round(realPlayer.marketValue * 0.9 * 10) / 10;
 
-      // Get current active market round end time
+      // Get current active market round & cycle
       const activeListings = await getOrResolveMarketRound(leagueId);
-      const roundEndsAt = activeListings.length > 0 ? activeListings[0].roundEndsAt : new Date(Date.now() + 8 * 60 * 60 * 1000);
+      const activeCycle = await db.marketCycle.findFirst({
+        where: { leagueId, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      });
+      const roundEndsAt = activeListings.length > 0 ? activeListings[0].roundEndsAt : (activeCycle?.endsAt || new Date(Date.now() + 8 * 60 * 60 * 1000));
 
       await db.marketListing.create({
         data: {
           leagueId,
+          marketCycleId: activeCycle?.id || null,
           realPlayerId,
           sellerTeamId: fantasyTeam.id,
           askingPrice: price,
@@ -230,7 +235,7 @@ export async function POST(req: Request) {
       });
 
       return NextResponse.json({
-        message: `🏷️ Has puesto a ${realPlayer.name} a la venta por ${price.toFixed(1)}M €. El Míster ya te ofrece ${misterOfferPrice.toFixed(1)}M € (90%) y puedes decidir si aceptar o rechazar en cualquier momento.`
+        message: `🏷️ Has puesto a ${realPlayer.name} a la venta por ${price.toFixed(1)}M €. El jugador ya está publicado en el mercado para otros mánagers y el Míster te ofrece ${misterOfferPrice.toFixed(1)}M € (90%).`
       });
     }
 
