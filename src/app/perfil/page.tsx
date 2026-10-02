@@ -40,12 +40,50 @@ export default function PerfilPage() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64Url = event.target?.result as string;
-      if (base64Url) {
-        setAvatarUrl(base64Url);
-        setMessage({ text: "Foto de tu dispositivo cargada. Pulsa 'Guardar Cambios' para aplicar.", type: "success" });
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) {
+        setUploadingAvatar(false);
+        return;
       }
-      setUploadingAvatar(false);
+
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          const MAX_SIZE = 150;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height = Math.round((height * MAX_SIZE) / width);
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width = Math.round((width * MAX_SIZE) / height);
+              height = MAX_SIZE;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          const compressedWebP = canvas.toDataURL("image/webp", 0.75);
+          setAvatarUrl(compressedWebP);
+          setMessage({ text: "Foto cargada y optimizada. Pulsa 'Guardar Cambios' para aplicar.", type: "success" });
+        } catch (err) {
+          console.error("Image compression error:", err);
+          setAvatarUrl(rawDataUrl);
+        } finally {
+          setUploadingAvatar(false);
+        }
+      };
+      img.onerror = () => {
+        setMessage({ text: "Error al procesar la imagen seleccionada", type: "error" });
+        setUploadingAvatar(false);
+      };
+      img.src = rawDataUrl;
     };
     reader.onerror = () => {
       setMessage({ text: "Error al leer la imagen seleccionada", type: "error" });

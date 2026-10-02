@@ -43,7 +43,7 @@ export async function PUT(req: Request) {
     const newNickname = nickname.trim();
     const newFullName = fullName?.trim() || null;
     let newAvatarUrl = avatarUrl?.trim() || null;
-    if (newAvatarUrl && newAvatarUrl.startsWith("data:")) {
+    if (newAvatarUrl && newAvatarUrl.startsWith("data:") && newAvatarUrl.length > 50000) {
       newAvatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
     }
 
