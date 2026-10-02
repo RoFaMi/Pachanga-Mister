@@ -47,7 +47,7 @@ async function runEgressBenchmark() {
 
   // Endpoint 1: /api/auth/me
   let t0 = Date.now();
-  let res = await getAuthMe();
+  let res: any = await getAuthMe();
   let text = await res.text();
   payloadSizes["/api/auth/me"] = Buffer.byteLength(text, "utf8");
   responseTimes["/api/auth/me"] = Date.now() - t0;
