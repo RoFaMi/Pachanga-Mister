@@ -285,13 +285,13 @@ async function main() {
 
   // Create 3 Real Teams for Matchday 1
   const teamA = await prisma.matchTeam.create({
-    data: { matchdayId: md1.id, name: "Equipo A (Verdes)", color: "#10B981" },
+    data: { matchdayId: md1.id, name: "Equipo 1", color: "#10B981" },
   });
   const teamB = await prisma.matchTeam.create({
-    data: { matchdayId: md1.id, name: "Equipo B (Azules)", color: "#3B82F6" },
+    data: { matchdayId: md1.id, name: "Equipo 2", color: "#3B82F6" },
   });
   const teamC = await prisma.matchTeam.create({
-    data: { matchdayId: md1.id, name: "Equipo C (Naranjas)", color: "#F97316" },
+    data: { matchdayId: md1.id, name: "Equipo 3", color: "#F97316" },
   });
 
   // Match 1: Equipo A vs Equipo B (2 - 1)

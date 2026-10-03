@@ -299,7 +299,7 @@ export default function PachangaLivePage() {
               {/* Team A */}
               <div className="flex flex-col items-center p-4 rounded-2xl bg-slate-950/60 border border-emerald-500/30">
                 <span className="text-xs font-extrabold uppercase text-emerald-400 tracking-wider mb-1 text-center">
-                  {selectedTeamA?.name || "Equipo A"}
+                  {selectedTeamA?.name || "Equipo 1"}
                 </span>
                 <span className="text-6xl font-black text-white my-2">{scoreA}</span>
                 <button
@@ -314,7 +314,7 @@ export default function PachangaLivePage() {
               {/* Team B */}
               <div className="flex flex-col items-center p-4 rounded-2xl bg-slate-950/60 border border-blue-500/30">
                 <span className="text-xs font-extrabold uppercase text-blue-400 tracking-wider mb-1 text-center">
-                  {selectedTeamB?.name || "Equipo B"}
+                  {selectedTeamB?.name || "Equipo 2"}
                 </span>
                 <span className="text-6xl font-black text-white my-2">{scoreB}</span>
                 <button

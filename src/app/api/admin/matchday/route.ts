@@ -35,15 +35,15 @@ export async function POST(req: Request) {
         },
       });
 
-      // Create default 3 real teams (Equipo A, Equipo B, Equipo C)
+      // Create default 3 real teams (Equipo 1, Equipo 2, Equipo 3)
       const tA = await db.matchTeam.create({
-        data: { matchdayId: newMatchday.id, name: "Equipo A (Verdes)", color: "#10B981" },
+        data: { matchdayId: newMatchday.id, name: "Equipo 1", color: "#10B981" },
       });
       const tB = await db.matchTeam.create({
-        data: { matchdayId: newMatchday.id, name: "Equipo B (Azules)", color: "#3B82F6" },
+        data: { matchdayId: newMatchday.id, name: "Equipo 2", color: "#3B82F6" },
       });
       const tC = await db.matchTeam.create({
-        data: { matchdayId: newMatchday.id, name: "Equipo C (Naranjas)", color: "#F97316" },
+        data: { matchdayId: newMatchday.id, name: "Equipo 3", color: "#F97316" },
       });
 
       return NextResponse.json({ matchday: newMatchday, teams: [tA, tB, tC], message: "Jornada creada con éxito" });
