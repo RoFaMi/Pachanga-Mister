@@ -97,21 +97,13 @@ export async function resolveMarketCycle(leagueId: string, cycleId: string) {
         const buyerTeam = bid.fantasyTeam;
         const bidAmount = bid.amount;
 
-        // Validation 1: Check buyer roster count (Max 5 futsal players)
+        // Fetch buyer roster
         const buyerRoster = await db.fantasyRoster.findMany({
           where: { fantasyTeamId: buyerTeam.id },
         });
 
-        if (buyerRoster.length >= 5) {
-          await db.marketBid.update({
-            where: { id: bid.id },
-            data: { status: "REJECTED", rejectionReason: "Plantilla llena (Máximo 5 jugadores de fútbol sala)" },
-          });
-          continue;
-        }
-
         // Validation 3: Check buyer does not already own an instance of this player
-        const alreadyOwns = buyerRoster.some((r) => r.realPlayerId === listing.realPlayerId);
+        const alreadyOwns = buyerRoster.some((r: any) => r.realPlayerId === listing.realPlayerId);
         if (alreadyOwns) {
           await db.marketBid.update({
             where: { id: bid.id },
@@ -152,7 +144,7 @@ export async function resolveMarketCycle(leagueId: string, cycleId: string) {
           where: { fantasyTeamId: buyerTeam.id },
         });
         const occupiedSlots = buyerRoster.map((r) => r.positionSlot);
-        const targetSlot = FUTSAL_STARTING_SLOTS.find((s) => !occupiedSlots.includes(s)) || "PIVOT";
+        const targetSlot = FUTSAL_STARTING_SLOTS.find((s) => !occupiedSlots.includes(s)) || "UNASSIGNED";
         const instanceClause = Math.round(bidAmount * 1.5 * 10) / 10;
 
         await db.$transaction(async (tx) => {

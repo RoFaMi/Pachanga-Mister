@@ -286,7 +286,7 @@ export default function PlantillaPage() {
               <div className="w-px h-8 bg-emerald-900/40"></div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Plantilla</span>
-                <span className="text-base font-black text-amber-400">{roster.length}/5 Jugadores</span>
+                <span className="text-base font-black text-amber-400">{roster.length} Jugadores ({5 - emptyStartingSlots}/5 Titulares)</span>
               </div>
             </div>
           </div>
@@ -371,6 +371,59 @@ export default function PlantillaPage() {
               />
             </div>
           </div>
+
+          {/* JUGADORES SIN ALINEAR (BANQUILLO) */}
+          {(() => {
+            const unalignedPlayers = roster.filter((r: any) => !["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"].includes(r.positionSlot));
+            if (unalignedPlayers.length === 0) return null;
+
+            return (
+              <div className="glass-panel p-5 rounded-3xl space-y-3 border border-amber-500/30">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-black text-amber-400 flex items-center gap-2">
+                    🪑 Jugadores Sin Alinear (Banquillo)
+                  </h3>
+                  <span className="text-xs font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/30">
+                    {unalignedPlayers.length} En banquillo
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 font-medium">
+                  Estos jugadores están en tu plantilla pero no forman parte del 5 titular. Puedes asignarlos al campo tocando cualquier posición vacía o titular en el campo superior:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {unalignedPlayers.map((entry: any) => {
+                    const p = entry.realPlayer;
+                    const isCap = p.id === captainId;
+
+                    return (
+                      <div key={entry.id} className="p-3 rounded-2xl bg-slate-900/90 border border-amber-900/40 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={p.photoUrl || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"}
+                            alt={p.name}
+                            className="w-11 h-11 rounded-xl object-cover border border-amber-400"
+                          />
+                          <div>
+                            <p className="text-sm font-black text-white">{p.name}</p>
+                            <p className="text-xs text-amber-400 font-bold">{p.nickname}</p>
+                            <span className="text-[10px] text-slate-400 font-bold">{p.marketValue}M €</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setSelectedSlotModal({ slotKey: "POR", slotTitle: "Asignar al Campo Titular" })}
+                          className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md transition-all flex-shrink-0"
+                        >
+                          Alinear ⚡
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Roster Detailed Table & Captain / Selling Actions */}
           <div className="glass-panel p-5 rounded-3xl space-y-4">

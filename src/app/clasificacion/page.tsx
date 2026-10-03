@@ -332,54 +332,163 @@ export default function ClasificacionPage() {
             </div>
 
             <p className="text-xs text-slate-300 font-medium">
-              💡 Toca sobre cualquier jugador de esta plantilla para abrir su ficha, enviarle una oferta directa o ejecutar un clausulazo:
+              💡 Toca sobre cualquier jugador (titular o banquillo) para abrir su ficha, hacerle una oferta directa o ejecutar un clausulazo:
             </p>
 
-            {/* Roster list */}
-            <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
-              {(selectedTeamModal.roster || []).length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400">Este equipo aún no tiene jugadores en su plantilla.</div>
-              ) : (
-                selectedTeamModal.roster.map((entry: any) => {
-                  const p = entry.realPlayer;
-                  const buyoutClause = p.buyoutClause || Math.round(p.marketValue * 1.5 * 10) / 10;
-                  const isShielded = currentMd && p.shieldedAtMatchdayNumber === currentMd.number;
+            {/* Roster Sections */}
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+              {/* SECTION 1: ALINEACIÓN TITULAR (5 POSICIONES EN CAMPO) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                    ⚽ Alineación Titular (5 en Campo)
+                  </h4>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {
+                      (selectedTeamModal.roster || []).filter((r: any) =>
+                        ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"].includes(r.positionSlot)
+                      ).length
+                    }
+                    /5 Titulares
+                  </span>
+                </div>
 
-                  return (
-                    <div
-                      key={entry.id}
-                      onClick={() => {
-                        setSelectedPlayerModal({ player: p, ownerTeam: selectedTeamModal });
-                        setDirectOfferInput(String(p.marketValue));
-                        setModalToast(null);
-                      }}
-                      className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/50 cursor-pointer transition-all hover:bg-slate-850"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={p.photoUrl || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"}
-                          alt={p.name}
-                          className="w-11 h-11 rounded-xl object-cover border border-emerald-400"
-                        />
-                        <div>
-                          <p className="text-sm font-black text-white">{p.name}</p>
-                          <p className="text-xs text-emerald-400 font-bold">{p.nickname}</p>
-                          {isShielded && (
-                            <span className="text-[9px] font-bold text-amber-400 flex items-center gap-0.5 mt-0.5">
-                              <Shield className="w-3 h-3" /> Blindado J#{currentMd.number}
-                            </span>
-                          )}
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { key: "POR", label: "Portero (POR)" },
+                    { key: "CIERRE", label: "Cierre (CIERRE)" },
+                    { key: "ALA_1", label: "Ala Izquierda (ALA 1)" },
+                    { key: "ALA_2", label: "Ala Derecha (ALA 2)" },
+                    { key: "PIVOT", label: "Pívot (PIVOT)" },
+                  ].map((slot) => {
+                    const entry = (selectedTeamModal.roster || []).find((r: any) => r.positionSlot === slot.key);
+                    const p = entry?.realPlayer;
+                    if (!p) {
+                      return (
+                        <div key={slot.key} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/60 border border-dashed border-slate-800 text-xs">
+                          <span className="font-bold text-slate-500">{slot.label}</span>
+                          <span className="text-[10px] font-semibold text-slate-600 italic">Posición vacía</span>
+                        </div>
+                      );
+                    }
+
+                    const buyoutClause = entry.buyoutClause || p.buyoutClause || Math.round(p.marketValue * 1.5 * 10) / 10;
+                    const isShielded = currentMd && p.shieldedAtMatchdayNumber === currentMd.number;
+
+                    return (
+                      <div
+                        key={slot.key}
+                        onClick={() => {
+                          setSelectedPlayerModal({ player: p, ownerTeam: selectedTeamModal });
+                          setDirectOfferInput(String(p.marketValue));
+                          setModalToast(null);
+                        }}
+                        className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/90 border border-emerald-900/40 hover:border-emerald-500/60 cursor-pointer transition-all hover:bg-slate-850"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={p.photoUrl || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"}
+                            alt={p.name}
+                            className="w-10 h-10 rounded-xl object-cover border border-emerald-400"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                {slot.label}
+                              </span>
+                              <p className="text-sm font-black text-white">{p.name}</p>
+                            </div>
+                            <p className="text-xs text-emerald-400 font-bold">{p.nickname}</p>
+                            {isShielded && (
+                              <span className="text-[9px] font-bold text-amber-400 flex items-center gap-0.5 mt-0.5">
+                                <Shield className="w-3 h-3" /> Blindado J#{currentMd.number}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-xs font-black text-emerald-400 block">{p.marketValue}M €</span>
+                          <span className="text-[10px] font-bold text-amber-400 block">Cláusula: {buyoutClause}M €</span>
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                      <div className="text-right">
-                        <span className="text-xs font-black text-emerald-400 block">{p.marketValue}M €</span>
-                        <span className="text-[10px] font-bold text-amber-400 block">Cláusula: {buyoutClause}M €</span>
-                      </div>
+              {/* SECTION 2: JUGADORES SIN ALINEAR (BANQUILLO) */}
+              {(() => {
+                const unalignedEntries = (selectedTeamModal.roster || []).filter(
+                  (r: any) => !["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"].includes(r.positionSlot)
+                );
+
+                return (
+                  <div className="space-y-2 pt-2 border-t border-emerald-900/40">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        🪑 Jugadores Sin Alinear (Banquillo)
+                      </h4>
+                      <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">
+                        {unalignedEntries.length} En banquillo
+                      </span>
                     </div>
-                  );
-                })
-              )}
+
+                    {unalignedEntries.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-500 rounded-2xl bg-slate-950/40 border border-slate-900">
+                        Este equipo no tiene jugadores sin alinear en el banquillo.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-2">
+                        {unalignedEntries.map((entry: any) => {
+                          const p = entry.realPlayer;
+                          const buyoutClause = entry.buyoutClause || p.buyoutClause || Math.round(p.marketValue * 1.5 * 10) / 10;
+                          const isShielded = currentMd && p.shieldedAtMatchdayNumber === currentMd.number;
+
+                          return (
+                            <div
+                              key={entry.id}
+                              onClick={() => {
+                                setSelectedPlayerModal({ player: p, ownerTeam: selectedTeamModal });
+                                setDirectOfferInput(String(p.marketValue));
+                                setModalToast(null);
+                              }}
+                              className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 border border-amber-900/40 hover:border-amber-500/60 cursor-pointer transition-all hover:bg-slate-850"
+                            >
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={p.photoUrl || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"}
+                                  alt={p.name}
+                                  className="w-10 h-10 rounded-xl object-cover border border-amber-400"
+                                />
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                      SIN ALINEAR
+                                    </span>
+                                    <p className="text-sm font-black text-white">{p.name}</p>
+                                  </div>
+                                  <p className="text-xs text-amber-400 font-bold">{p.nickname}</p>
+                                  {isShielded && (
+                                    <span className="text-[9px] font-bold text-amber-400 flex items-center gap-0.5 mt-0.5">
+                                      <Shield className="w-3 h-3" /> Blindado J#{currentMd.number}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <span className="text-xs font-black text-emerald-400 block">{p.marketValue}M €</span>
+                                <span className="text-[10px] font-bold text-amber-400 block">Cláusula: {buyoutClause}M €</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

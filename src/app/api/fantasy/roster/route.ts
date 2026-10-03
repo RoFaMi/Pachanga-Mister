@@ -14,9 +14,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Parámetros incompletos" }, { status: 400 });
     }
 
-    const VALID_SLOTS = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT", "SUPLENTE_1"];
+    const VALID_SLOTS = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT", "UNASSIGNED", "SUPLENTE_1", "SUPLENTE_2"];
     if (!VALID_SLOTS.includes(targetSlot)) {
       return NextResponse.json({ error: "Posición no válida" }, { status: 400 });
+    }
+
+    // Check if there is an ongoing matchday in progress
+    const activeMatchday = await db.matchday.findFirst({
+      where: { leagueId, status: "IN_PROGRESS" },
+    });
+
+    if (activeMatchday) {
+      return NextResponse.json({
+        error: "🚫 La jornada está en juego. No se pueden realizar cambios en la alineación hasta que finalicen los partidos.",
+      }, { status: 400 });
     }
 
     const fantasyTeam = await db.fantasyTeam.findUnique({

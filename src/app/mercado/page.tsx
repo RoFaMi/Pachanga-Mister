@@ -132,7 +132,7 @@ export default function MercadoPage() {
 
   const handlePlaceBid = async (listingId: string, askingPrice: number) => {
     if (!league) return;
-    const bidVal = parseFloat(bidInputs[listingId] || "");
+    const bidVal = parseFloat((bidInputs[listingId] || "").replace(",", "."));
 
     if (isNaN(bidVal) || bidVal < askingPrice) {
       setMessage({
@@ -350,7 +350,7 @@ export default function MercadoPage() {
               <div className="w-px h-8 bg-emerald-900/40"></div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Plantilla</span>
-                <span className="text-base font-black text-amber-400">{myRosterIds.length}/5</span>
+                <span className="text-base font-black text-amber-400">{myRosterIds.length} Jugadores</span>
               </div>
             </div>
           </div>
@@ -615,9 +615,8 @@ export default function MercadoPage() {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <input
-                              type="number"
-                              step="0.1"
-                              min={listing.askingPrice}
+                              type="text"
+                              inputMode="decimal"
                               value={bidInputs[listing.id] || ""}
                               onChange={(e) => setBidInputs({ ...bidInputs, [listing.id]: e.target.value })}
                               placeholder={`Mín. ${listing.askingPrice.toFixed(1)}M €`}
@@ -625,7 +624,7 @@ export default function MercadoPage() {
                             />
                             <button
                               onClick={() => handlePlaceBid(listing.id, listing.askingPrice)}
-                              disabled={isLoading || (myRosterIds.length >= 5)}
+                              disabled={isLoading}
                               className="py-2 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md shadow-emerald-500/20 disabled:opacity-50 flex-shrink-0 transition-all"
                             >
                               {isLoading ? "Enviando..." : myBid ? "Actualizar Puja" : "Pujar Secreto"}
@@ -709,7 +708,7 @@ export default function MercadoPage() {
 
                         <button
                           onClick={() => handleClausulazoOrShield(player.id, "CLAUSULAZO")}
-                          disabled={isLoading || is24hLockdown || isShielded || (myRosterIds.length >= 5)}
+                          disabled={isLoading || is24hLockdown || isShielded}
                           className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all"
                         >
                           <Zap className="w-4 h-4 fill-slate-950" />

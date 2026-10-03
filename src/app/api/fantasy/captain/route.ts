@@ -24,8 +24,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Jornada no encontrada" }, { status: 404 });
     }
 
-    if (matchday.status === "COMPLETED") {
-      return NextResponse.json({ error: "No se puede cambiar el capitán de una jornada ya finalizada" }, { status: 400 });
+    if (matchday.status === "COMPLETED" || matchday.status === "IN_PROGRESS") {
+      return NextResponse.json({ error: "🚫 La jornada ya ha comenzado o finalizado. No se pueden cambiar capitanes durante la jornada." }, { status: 400 });
     }
 
     const fantasyTeam = await db.fantasyTeam.findUnique({

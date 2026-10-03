@@ -176,8 +176,8 @@ export async function POST(req: Request) {
           where: { fantasyTeamId: offer.buyerTeamId },
         });
         const occupiedSlots = buyerRoster.map((r) => r.positionSlot);
-        const ALL_SLOTS = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT", "SUPLENTE_1"];
-        const targetSlot = ALL_SLOTS.find((s) => !occupiedSlots.includes(s)) || "SUPLENTE_1";
+        const STARTING_SLOTS = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"];
+        const targetSlot = STARTING_SLOTS.find((s) => !occupiedSlots.includes(s)) || "UNASSIGNED";
 
         await db.$transaction(async (tx) => {
           // Deduct budget buyer & Add budget seller

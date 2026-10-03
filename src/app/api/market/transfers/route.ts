@@ -147,12 +147,6 @@ export async function POST(req: Request) {
         }, { status: 400 });
       }
 
-      if (fantasyTeam.roster.length >= 5) {
-        return NextResponse.json({
-          error: "Tu plantilla ya tiene el máximo de 5 jugadores. Vende a uno antes de pujar por un nuevo jugador."
-        }, { status: 400 });
-      }
-
       const alreadyOwnsPlayer = fantasyTeam.roster.some((r) => r.realPlayerId === listing.realPlayerId);
       if (alreadyOwnsPlayer) {
         return NextResponse.json({
@@ -294,18 +288,11 @@ export async function POST(req: Request) {
         }, { status: 400 });
       }
 
-      // Check max roster length (5 futsal players max)
-      if (fantasyTeam.roster.length >= 5) {
-        return NextResponse.json({
-          error: "Tu plantilla ya tiene el límite máximo de 5 jugadores. Vende a uno antes de ejecutar el clausulazo."
-        }, { status: 400 });
-      }
-
       const newBuyoutClause = Math.round(clauseAmount * 1.3 * 10) / 10;
       const occupiedBuyerSlots = fantasyTeam.roster.map((r) => r.positionSlot);
       let targetSlot = positionSlot;
       if (!targetSlot) {
-        targetSlot = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"].find((s) => !occupiedBuyerSlots.includes(s)) || "PIVOT";
+        targetSlot = ["POR", "CIERRE", "ALA_1", "ALA_2", "PIVOT"].find((s) => !occupiedBuyerSlots.includes(s)) || "UNASSIGNED";
       }
 
       // Execute atomic transaction for Clausulazo
